@@ -1,26 +1,86 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
+@theme {
+  --color-primary: #0050d4;
+  --color-error: #b31b25;
+  --color-surface-container-high: #dfe3e6;
+  --color-on-surface: #2c2f31;
+  --color-on-background: #2c2f31;
+  --color-on-surface-variant: #595c5e;
+  --color-on-primary-fixed-variant: #00266e;
+  --color-surface-bright: #f5f7f9;
+  --color-secondary: #6a37d4;
+  --color-tertiary-dim: #004ca6;
+  --color-inverse-on-surface: #9a9d9f;
+  --color-on-error: #ffefee;
+  --color-error-dim: #9f0519;
+  --color-secondary-fixed: #dac9ff;
+  --color-tertiary-container: #8ab0ff;
+  --color-outline: #747779;
+  --color-outline-variant: #abadaf;
+  --color-on-tertiary-fixed: #00163b;
+  --color-surface-container-highest: #d9dde0;
+  --color-primary-fixed-dim: #658eff;
+  --color-secondary-fixed-dim: #ceb9ff;
+  --color-tertiary: #0057bd;
+  --color-on-error-container: #570008;
+  --color-on-primary: #f1f2ff;
+  --color-surface-variant: #d9dde0;
+  --color-error-container: #fb5151;
+  --color-surface-container-low: #eef1f3;
+  --color-tertiary-fixed: #8ab0ff;
+  --color-inverse-primary: #618bff;
+  --color-on-secondary-fixed-variant: #5f28c8;
+  --color-secondary-container: #dac9ff;
+  --color-on-tertiary-container: #002e6a;
+  --color-inverse-surface: #0b0f10;
+  --color-on-tertiary-fixed-variant: #00377b;
+  --color-primary-container: #7b9cff;
+  --color-on-primary-fixed: #000000;
+  --color-background: #f5f7f9;
+  --color-surface-tint: #0050d4;
+  --color-on-secondary: #f8f0ff;
+  --color-secondary-dim: #5e26c7;
+  --color-surface-dim: #d0d5d8;
+  --color-tertiary-fixed-dim: #73a2ff;
+  --color-surface: #f5f7f9;
+  --color-primary-dim: #0046bb;
+  --color-surface-container: #e5e9eb;
+  --color-surface-container-lowest: #ffffff;
+  --color-on-secondary-fixed: #40009b;
+  --color-on-secondary-container: #5517bf;
+  --color-on-primary-container: #001e5a;
+  --color-primary-fixed: #7b9cff;
+  --color-on-tertiary: #f0f2ff;
+
+  --font-headline: "Inter", sans-serif;
+  --font-body: "Inter", sans-serif;
+  --font-label: "Inter", sans-serif;
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
+@layer base {
   :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+    --background: #f5f7f9;
+    --foreground: #2c2f31;
   }
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-body);
+}
+
+.material-symbols-outlined {
+  font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+}
+
+.signature-gradient {
+  background: linear-gradient(135deg, #0050d4 0%, #7b9cff 100%);
+}
+
+.glass-card {
+  background: rgba(255, 255, 255, 0.7);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
 }
