@@ -17,13 +17,17 @@ import {
 } from "lucide-react";
 import {
   ApiError,
+  CvListItemResponse,
   CvResponse,
   CvReviewResponse,
   createCvReview,
+  deleteCv,
   getExtractionStatus,
   getLatestCvReview,
+  getMyCvs,
   getPresignedUrl,
   retryExtraction,
+  setDefaultCv,
   uploadCv,
 } from "@/lib/api/cv";
 
@@ -106,6 +110,21 @@ function toCvItem(cv: CvResponse): CvItem {
   };
 }
 
+function toCvItemFromList(item: CvListItemResponse, isDefault: boolean, existing?: CvItem): CvItem {
+  return {
+    id: item.id,
+    fileName: item.cvName,
+    uploadedAt: existing?.uploadedAt ?? "",
+    sizeLabel: existing?.sizeLabel ?? "Stored CV",
+    typeLabel: getFileTypeLabel(item.cvName),
+    isDefault,
+    aiStatus: existing?.aiStatus ?? "PENDING",
+    aiError: existing?.aiError,
+    review: existing?.review,
+    reviewLoading: existing?.reviewLoading,
+  };
+}
+
 export default function CandidateCVPage() {
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const [cvs, setCvs] = useState<CvItem[]>([]);
@@ -113,6 +132,65 @@ export default function CandidateCVPage() {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [activePreviewId, setActivePreviewId] = useState<string | null>(null);
   const [activeReviewId, setActiveReviewId] = useState<string | null>(null);
+  const [activeDefaultId, setActiveDefaultId] = useState<string | null>(null);
+  const [activeDeleteId, setActiveDeleteId] = useState<string | null>(null);
+  const [loadingList, setLoadingList] = useState(true);
+
+  const loadCvList = async (showLoading = true) => {
+    if (showLoading) {
+      setLoadingList(true);
+    }
+    setErrorMessage(null);
+
+    try {
+      const list = await getMyCvs();
+
+      const merged = list.map((item, index) => ({ item, isDefault: index === 0 }));
+      setCvs((prev) => {
+        const existingById = new Map(prev.map((cv) => [cv.id, cv]));
+        return merged.map(({ item, isDefault }) => toCvItemFromList(item, isDefault, existingById.get(item.id)));
+      });
+
+      if (merged.length > 0) {
+        const statusResults = await Promise.allSettled(merged.map(({ item }) => getExtractionStatus(item.id)));
+        setCvs((prev) =>
+          prev.map((cv) => {
+            const statusResult = statusResults.find(
+              (result) => result.status === "fulfilled" && result.value.cvId === cv.id,
+            );
+
+            if (!statusResult || statusResult.status !== "fulfilled") {
+              return cv;
+            }
+
+            return {
+              ...cv,
+              aiStatus: statusResult.value.status,
+              aiError: statusResult.value.errorMessage ?? undefined,
+            };
+          }),
+        );
+      }
+    } catch (error) {
+      if (error instanceof ApiError) {
+        setErrorMessage(error.message);
+      } else {
+        setErrorMessage("Could not load your CV list.");
+      }
+    } finally {
+      setLoadingList(false);
+    }
+  };
+
+  useEffect(() => {
+    const timer = window.setTimeout(() => {
+      void loadCvList(false);
+    }, 0);
+
+    return () => {
+      window.clearTimeout(timer);
+    };
+  }, []);
 
   useEffect(() => {
     const pendingIds = cvs.filter((cv) => cv.aiStatus === "PENDING").map((cv) => cv.id);
@@ -168,7 +246,12 @@ export default function CandidateCVPage() {
 
     try {
       const uploadedCv = await uploadCv(file);
-      setCvs((prev) => [toCvItem(uploadedCv), ...prev]);
+      setCvs((prev) => {
+        const newItem = toCvItem(uploadedCv);
+        newItem.isDefault = prev.length === 0;
+        return [newItem, ...prev];
+      });
+      await loadCvList();
     } catch (error) {
       if (error instanceof ApiError) {
         setErrorMessage(error.message);
@@ -259,6 +342,42 @@ export default function CandidateCVPage() {
       } else {
         setErrorMessage("Retry failed. Please try again.");
       }
+    }
+  };
+
+  const handleSetDefault = async (cvId: string) => {
+    setActiveDefaultId(cvId);
+    setErrorMessage(null);
+
+    try {
+      await setDefaultCv(cvId);
+      setCvs((prev) => prev.map((cv) => ({ ...cv, isDefault: cv.id === cvId })));
+    } catch (error) {
+      if (error instanceof ApiError) {
+        setErrorMessage(error.message);
+      } else {
+        setErrorMessage("Could not set default CV.");
+      }
+    } finally {
+      setActiveDefaultId(null);
+    }
+  };
+
+  const handleDeleteCv = async (cvId: string) => {
+    setActiveDeleteId(cvId);
+    setErrorMessage(null);
+
+    try {
+      await deleteCv(cvId);
+      await loadCvList();
+    } catch (error) {
+      if (error instanceof ApiError) {
+        setErrorMessage(error.message);
+      } else {
+        setErrorMessage("Could not delete CV.");
+      }
+    } finally {
+      setActiveDeleteId(null);
     }
   };
 
@@ -364,7 +483,9 @@ export default function CandidateCVPage() {
           <section className="space-y-6">
             <h2 className="text-2xl font-bold tracking-tight text-on-surface px-1">My CVs</h2>
 
-            {cvs.length === 0 ? (
+            {loadingList ? (
+              <div className="glass-card rounded-[2rem] p-8 text-on-surface-variant text-sm">Loading CVs...</div>
+            ) : cvs.length === 0 ? (
               <div className="glass-card rounded-[2rem] p-8 text-on-surface-variant text-sm">
                 No CV yet. Upload one to start extracting and reviewing.
               </div>
@@ -417,19 +538,29 @@ export default function CandidateCVPage() {
                             </button>
                             <button
                               type="button"
-                              disabled
-                              className="flex items-center gap-1 text-on-surface-variant font-bold text-sm opacity-50 cursor-not-allowed"
-                              title="Chức năng chưa được backend hỗ trợ"
+                              onClick={() => handleSetDefault(cv.id)}
+                              disabled={cv.isDefault || activeDefaultId === cv.id || activeDeleteId === cv.id}
+                              className="flex items-center gap-1 text-on-surface-variant font-bold text-sm hover:text-primary transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                             >
-                              <CheckCircle className="w-4 h-4" /> Set as Default
+                              {activeDefaultId === cv.id ? (
+                                <LoaderCircle className="w-4 h-4 animate-spin" />
+                              ) : (
+                                <CheckCircle className="w-4 h-4" />
+                              )}
+                              Set as Default
                             </button>
                             <button
                               type="button"
-                              disabled
-                              className="flex items-center gap-1 text-error/70 font-bold text-sm opacity-50 cursor-not-allowed"
-                              title="Chức năng chưa được backend hỗ trợ"
+                              onClick={() => handleDeleteCv(cv.id)}
+                              disabled={activeDeleteId === cv.id || activeDefaultId === cv.id}
+                              className="flex items-center gap-1 text-error/70 font-bold text-sm hover:text-error transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                             >
-                              <Trash2 className="w-4 h-4" /> Delete
+                              {activeDeleteId === cv.id ? (
+                                <LoaderCircle className="w-4 h-4 animate-spin" />
+                              ) : (
+                                <Trash2 className="w-4 h-4" />
+                              )}
+                              Delete
                             </button>
                             {cv.aiStatus === "FAILED" && (
                               <button

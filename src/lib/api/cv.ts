@@ -43,6 +43,11 @@ export type CvReviewResponse = {
   createdAt?: string;
 };
 
+export type CvListItemResponse = {
+  id: string;
+  cvName: string;
+};
+
 type ApiErrorShape = {
   code?: number;
   message?: string;
@@ -142,4 +147,20 @@ export function createCvReview(cvId: string): Promise<CvReviewResponse> {
 
 export function getLatestCvReview(cvId: string): Promise<CvReviewResponse> {
   return request<CvReviewResponse>(`/api/cv/${cvId}/review`);
+}
+
+export function getMyCvs(): Promise<CvListItemResponse[]> {
+  return request<CvListItemResponse[]>("/api/cv");
+}
+
+export function setDefaultCv(cvId: string): Promise<string> {
+  return request<string>(`/api/cv/${cvId}/default`, {
+    method: "PUT",
+  });
+}
+
+export function deleteCv(cvId: string): Promise<string> {
+  return request<string>(`/api/cv/${cvId}`, {
+    method: "DELETE",
+  });
 }
