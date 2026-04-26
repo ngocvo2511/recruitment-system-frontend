@@ -46,6 +46,9 @@ export type CvReviewResponse = {
 export type CvListItemResponse = {
   id: string;
   cvName: string;
+  uploadedAt: string;
+  isDefault?: boolean;
+  default?: boolean;
 };
 
 type ApiErrorShape = {

@@ -1,55 +1,27 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useRef, useState } from "react";
-import {
-  User,
-  FileText,
-  Settings,
-  Lightbulb,
-  CloudUpload,
-  File,
-  CheckCircle,
-  Trash2,
-  Eye,
-  LoaderCircle,
-  RotateCcw,
-} from "lucide-react";
-import {
-  ApiError,
-  CvListItemResponse,
-  CvResponse,
-  CvReviewResponse,
-  createCvReview,
-  deleteCv,
-  getExtractionStatus,
-  getLatestCvReview,
-  getMyCvs,
-  getPresignedUrl,
-  retryExtraction,
-  setDefaultCv,
-  uploadCv,
-} from "@/lib/api/cv";
+import { useEffect, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
+import { User, FileText, Settings, Lightbulb, CloudUpload, File, Eye, Trash2, LoaderCircle, CheckCircle } from "lucide-react";
+import { ApiError, CvListItemResponse, deleteCv, getMyCvs, setDefaultCv, uploadCv } from "@/lib/api/cv";
 
-type CvItem = {
-  id: string;
-  fileName: string;
-  uploadedAt: string;
-  sizeLabel: string;
-  typeLabel: string;
-  isDefault: boolean;
-  aiStatus: "PENDING" | "COMPLETED" | "FAILED";
-  aiError?: string;
-  review?: CvReviewResponse;
-  reviewLoading?: boolean;
+type ConfirmAction = {
+  type: "delete" | "default";
+  cvId: string;
+  cvName: string;
 };
 
-const POLL_INTERVAL_MS = 2500;
+type ToastItem = {
+  id: number;
+  type: "success" | "error";
+  message: string;
+};
 
 function formatDate(value: string): string {
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) {
-    return value;
+    return value || "--";
   }
 
   return date.toLocaleString("en-US", {
@@ -70,112 +42,40 @@ function getFileTypeLabel(fileName: string): string {
   return "FILE";
 }
 
-function stringifySmallList(jsonString?: string | null): string[] {
-  if (!jsonString) {
-    return [];
-  }
-
-  try {
-    const parsed = JSON.parse(jsonString);
-    if (Array.isArray(parsed)) {
-      return parsed
-        .map((item) => {
-          if (typeof item === "string") {
-            return item;
-          }
-          if (item && typeof item === "object" && "skill" in item && typeof item.skill === "string") {
-            return item.skill;
-          }
-          return "";
-        })
-        .filter(Boolean)
-        .slice(0, 4);
-    }
-  } catch {
-    return [];
-  }
-
-  return [];
-}
-
-function toCvItem(cv: CvResponse): CvItem {
-  return {
-    id: cv.id,
-    fileName: cv.fileName,
-    uploadedAt: cv.uploadedAt,
-    sizeLabel: "New Upload",
-    typeLabel: getFileTypeLabel(cv.fileName),
-    isDefault: false,
-    aiStatus: "PENDING",
-  };
-}
-
-function toCvItemFromList(item: CvListItemResponse, isDefault: boolean, existing?: CvItem): CvItem {
-  return {
-    id: item.id,
-    fileName: item.cvName,
-    uploadedAt: existing?.uploadedAt ?? "",
-    sizeLabel: existing?.sizeLabel ?? "Stored CV",
-    typeLabel: getFileTypeLabel(item.cvName),
-    isDefault,
-    aiStatus: existing?.aiStatus ?? "PENDING",
-    aiError: existing?.aiError,
-    review: existing?.review,
-    reviewLoading: existing?.reviewLoading,
-  };
-}
-
 export default function CandidateCVPage() {
+  const router = useRouter();
   const fileInputRef = useRef<HTMLInputElement | null>(null);
-  const [cvs, setCvs] = useState<CvItem[]>([]);
-  const [uploading, setUploading] = useState(false);
-  const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  const [activePreviewId, setActivePreviewId] = useState<string | null>(null);
-  const [activeReviewId, setActiveReviewId] = useState<string | null>(null);
-  const [activeDefaultId, setActiveDefaultId] = useState<string | null>(null);
-  const [activeDeleteId, setActiveDeleteId] = useState<string | null>(null);
+
+  const [cvs, setCvs] = useState<CvListItemResponse[]>([]);
   const [loadingList, setLoadingList] = useState(true);
+  const [uploading, setUploading] = useState(false);
+  const [activeDeleteId, setActiveDeleteId] = useState<string | null>(null);
+  const [activeDefaultId, setActiveDefaultId] = useState<string | null>(null);
+  const [confirmAction, setConfirmAction] = useState<ConfirmAction | null>(null);
+  const [toasts, setToasts] = useState<ToastItem[]>([]);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
+  const addToast = (type: ToastItem["type"], message: string) => {
+    const id = Date.now() + Math.floor(Math.random() * 1000);
+    setToasts((prev) => [...prev, { id, type, message }]);
+    window.setTimeout(() => {
+      setToasts((prev) => prev.filter((item) => item.id !== id));
+    }, 3200);
+  };
 
   const loadCvList = async (showLoading = true) => {
     if (showLoading) {
       setLoadingList(true);
     }
-    setErrorMessage(null);
 
     try {
       const list = await getMyCvs();
-
-      const merged = list.map((item, index) => ({ item, isDefault: index === 0 }));
-      setCvs((prev) => {
-        const existingById = new Map(prev.map((cv) => [cv.id, cv]));
-        return merged.map(({ item, isDefault }) => toCvItemFromList(item, isDefault, existingById.get(item.id)));
-      });
-
-      if (merged.length > 0) {
-        const statusResults = await Promise.allSettled(merged.map(({ item }) => getExtractionStatus(item.id)));
-        setCvs((prev) =>
-          prev.map((cv) => {
-            const statusResult = statusResults.find(
-              (result) => result.status === "fulfilled" && result.value.cvId === cv.id,
-            );
-
-            if (!statusResult || statusResult.status !== "fulfilled") {
-              return cv;
-            }
-
-            return {
-              ...cv,
-              aiStatus: statusResult.value.status,
-              aiError: statusResult.value.errorMessage ?? undefined,
-            };
-          }),
-        );
-      }
+      setCvs(list);
     } catch (error) {
       if (error instanceof ApiError) {
         setErrorMessage(error.message);
       } else {
-        setErrorMessage("Could not load your CV list.");
+        setErrorMessage("Could not load CV list.");
       }
     } finally {
       setLoadingList(false);
@@ -192,50 +92,6 @@ export default function CandidateCVPage() {
     };
   }, []);
 
-  useEffect(() => {
-    const pendingIds = cvs.filter((cv) => cv.aiStatus === "PENDING").map((cv) => cv.id);
-    if (pendingIds.length === 0) {
-      return;
-    }
-
-    const timer = window.setInterval(async () => {
-      const results = await Promise.allSettled(pendingIds.map((id) => getExtractionStatus(id)));
-      setCvs((prev) => {
-        const next = [...prev];
-        for (const result of results) {
-          if (result.status !== "fulfilled") {
-            continue;
-          }
-
-          const status = result.value;
-          const index = next.findIndex((item) => item.id === status.cvId);
-          if (index < 0) {
-            continue;
-          }
-
-          next[index] = {
-            ...next[index],
-            aiStatus: status.status,
-            aiError: status.errorMessage ?? undefined,
-          };
-        }
-        return next;
-      });
-    }, POLL_INTERVAL_MS);
-
-    return () => {
-      window.clearInterval(timer);
-    };
-  }, [cvs]);
-
-  const profileStrength = useMemo(() => {
-    if (cvs.length === 0) {
-      return 65;
-    }
-    const completed = cvs.filter((cv) => cv.aiStatus === "COMPLETED").length;
-    return Math.min(95, 65 + completed * 10);
-  }, [cvs]);
-
   const handleOpenFileDialog = () => {
     fileInputRef.current?.click();
   };
@@ -245,13 +101,9 @@ export default function CandidateCVPage() {
     setErrorMessage(null);
 
     try {
-      const uploadedCv = await uploadCv(file);
-      setCvs((prev) => {
-        const newItem = toCvItem(uploadedCv);
-        newItem.isDefault = prev.length === 0;
-        return [newItem, ...prev];
-      });
+      const uploaded = await uploadCv(file);
       await loadCvList();
+      router.push(`/candidate/cv/${uploaded.id}`);
     } catch (error) {
       if (error instanceof ApiError) {
         setErrorMessage(error.message);
@@ -275,110 +127,62 @@ export default function CandidateCVPage() {
     await handleUploadFile(file);
   };
 
-  const handlePreview = async (cvId: string) => {
-    setActivePreviewId(cvId);
+  const handleDeleteCv = async (cvId: string, cvName: string) => {
+    setActiveDeleteId(cvId);
     setErrorMessage(null);
+
     try {
-      const data = await getPresignedUrl(cvId);
-      window.open(data.downloadUrl, "_blank", "noopener,noreferrer");
+      await deleteCv(cvId);
+      await loadCvList(false);
+      addToast("success", `Deleted CV: ${cvName}`);
     } catch (error) {
       if (error instanceof ApiError) {
         setErrorMessage(error.message);
+        addToast("error", error.message);
       } else {
-        setErrorMessage("Could not open CV preview.");
+        setErrorMessage("Could not delete CV.");
+        addToast("error", "Could not delete CV.");
       }
     } finally {
-      setActivePreviewId(null);
+      setActiveDeleteId(null);
     }
   };
 
-  const handleReview = async (cvId: string) => {
-    setActiveReviewId(cvId);
-    setErrorMessage(null);
-
-    setCvs((prev) =>
-      prev.map((cv) => (cv.id === cvId ? { ...cv, reviewLoading: true } : cv)),
-    );
-
-    try {
-      const review = await getLatestCvReview(cvId).catch(async (error) => {
-        if (error instanceof ApiError && error.code === 2009) {
-          return createCvReview(cvId);
-        }
-        throw error;
-      });
-
-      setCvs((prev) =>
-        prev.map((cv) => (cv.id === cvId ? { ...cv, review, reviewLoading: false } : cv)),
-      );
-    } catch (error) {
-      if (error instanceof ApiError) {
-        setErrorMessage(error.message);
-      } else {
-        setErrorMessage("Unable to generate AI review right now.");
-      }
-      setCvs((prev) =>
-        prev.map((cv) => (cv.id === cvId ? { ...cv, reviewLoading: false } : cv)),
-      );
-    } finally {
-      setActiveReviewId(null);
-    }
-  };
-
-  const handleRetryExtraction = async (cvId: string) => {
-    setErrorMessage(null);
-    try {
-      await retryExtraction(cvId);
-      setCvs((prev) =>
-        prev.map((cv) =>
-          cv.id === cvId
-            ? { ...cv, aiStatus: "PENDING", aiError: undefined, review: undefined }
-            : cv,
-        ),
-      );
-    } catch (error) {
-      if (error instanceof ApiError) {
-        setErrorMessage(error.message);
-      } else {
-        setErrorMessage("Retry failed. Please try again.");
-      }
-    }
-  };
-
-  const handleSetDefault = async (cvId: string) => {
+  const handleSetDefault = async (cvId: string, cvName: string) => {
     setActiveDefaultId(cvId);
     setErrorMessage(null);
 
     try {
       await setDefaultCv(cvId);
       setCvs((prev) => prev.map((cv) => ({ ...cv, isDefault: cv.id === cvId })));
+      addToast("success", `Set default CV: ${cvName}`);
     } catch (error) {
       if (error instanceof ApiError) {
         setErrorMessage(error.message);
+        addToast("error", error.message);
       } else {
         setErrorMessage("Could not set default CV.");
+        addToast("error", "Could not set default CV.");
       }
     } finally {
       setActiveDefaultId(null);
     }
   };
 
-  const handleDeleteCv = async (cvId: string) => {
-    setActiveDeleteId(cvId);
-    setErrorMessage(null);
-
-    try {
-      await deleteCv(cvId);
-      await loadCvList();
-    } catch (error) {
-      if (error instanceof ApiError) {
-        setErrorMessage(error.message);
-      } else {
-        setErrorMessage("Could not delete CV.");
-      }
-    } finally {
-      setActiveDeleteId(null);
+  const confirmCurrentAction = async () => {
+    if (!confirmAction) {
+      return;
     }
+
+    const action = confirmAction;
+    setConfirmAction(null);
+
+    if (action.type === "delete") {
+      await handleDeleteCv(action.cvId, action.cvName);
+      return;
+    }
+
+    await handleSetDefault(action.cvId, action.cvName);
   };
 
   return (
@@ -386,53 +190,29 @@ export default function CandidateCVPage() {
       <div className="flex flex-col md:flex-row gap-8">
         <aside className="w-full md:w-64 flex flex-col gap-2 shrink-0">
           <nav className="flex flex-col gap-1">
-            <Link
-              href="/candidate/profile"
-              className="flex items-center gap-3 px-4 py-3 rounded-xl text-on-surface-variant hover:bg-surface-container-high transition-colors"
-            >
+            <Link href="/candidate/profile" className="flex items-center gap-3 px-4 py-3 rounded-xl text-on-surface-variant hover:bg-surface-container-high transition-colors">
               <User className="w-5 h-5" />
               <span className="font-medium">Personal Info</span>
             </Link>
-            <Link
-              href="/candidate/cv"
-              className="flex items-center gap-3 px-4 py-3 rounded-xl bg-primary-container/20 text-primary font-bold"
-            >
+            <Link href="/candidate/cv" className="flex items-center gap-3 px-4 py-3 rounded-xl bg-primary-container/20 text-primary font-bold">
               <FileText className="w-5 h-5 fill-primary/20" />
               <span>CV Management</span>
             </Link>
-            <Link
-              href="#"
-              className="flex items-center gap-3 px-4 py-3 rounded-xl text-on-surface-variant hover:bg-surface-container-high transition-colors"
-            >
+            <Link href="#" className="flex items-center gap-3 px-4 py-3 rounded-xl text-on-surface-variant hover:bg-surface-container-high transition-colors">
               <Lightbulb className="w-5 h-5" />
               <span className="font-medium">AI Insights</span>
             </Link>
-            <Link
-              href="#"
-              className="flex items-center gap-3 px-4 py-3 rounded-xl text-on-surface-variant hover:bg-surface-container-high transition-colors"
-            >
+            <Link href="#" className="flex items-center gap-3 px-4 py-3 rounded-xl text-on-surface-variant hover:bg-surface-container-high transition-colors">
               <Settings className="w-5 h-5" />
               <span className="font-medium">Settings</span>
             </Link>
           </nav>
-
-          <div className="mt-8 glass-card p-6 rounded-3xl border-none shadow-sm">
-            <p className="text-sm font-bold text-primary uppercase tracking-widest mb-2">Profile Strength</p>
-            <div className="w-full bg-surface-container-highest h-2 rounded-full mb-4 overflow-hidden">
-              <div className="signature-gradient h-full rounded-full" style={{ width: `${profileStrength}%` }}></div>
-            </div>
-            <p className="text-xs text-on-surface-variant">
-              Upload and process CVs to unlock stronger AI insights.
-            </p>
-          </div>
         </aside>
 
         <div className="flex-1 space-y-8 min-w-0">
           <header className="flex flex-col gap-2">
             <h1 className="text-4xl font-extrabold tracking-tight text-on-surface">CV Management</h1>
-            <p className="text-on-surface-variant text-lg bg-transparent">
-              Upload, track AI extraction status, preview your CV, and request AI review.
-            </p>
+            <p className="text-on-surface-variant text-lg bg-transparent">Manage your CV list, then open any CV to view details and AI review.</p>
           </header>
 
           {errorMessage && (
@@ -444,7 +224,7 @@ export default function CandidateCVPage() {
           <section className="relative group">
             <div className="absolute -inset-1 signature-gradient rounded-[2rem] blur opacity-20 group-hover:opacity-30 transition-opacity"></div>
             <div
-              className="relative glass-card border-dashed border-2 border-primary/30 p-12 rounded-[2rem] flex flex-col items-center text-center gap-4 hover:border-primary transition-all bg-white/40"
+              className="relative glass-card border-dashed border-2 border-primary/30 p-10 rounded-[2rem] flex flex-col items-center text-center gap-4 hover:border-primary transition-all bg-white/40"
               role="button"
               tabIndex={0}
               onClick={handleOpenFileDialog}
@@ -462,11 +242,11 @@ export default function CandidateCVPage() {
                 className="hidden"
                 onChange={handleFileChange}
               />
-              <div className="h-16 w-16 signature-gradient text-white rounded-full flex items-center justify-center shadow-lg shadow-primary/20">
-                {uploading ? <LoaderCircle className="w-8 h-8 animate-spin" /> : <CloudUpload className="w-8 h-8" />}
+              <div className="h-14 w-14 signature-gradient text-white rounded-full flex items-center justify-center shadow-lg shadow-primary/20">
+                {uploading ? <LoaderCircle className="w-7 h-7 animate-spin" /> : <CloudUpload className="w-7 h-7" />}
               </div>
               <div>
-                <h3 className="text-xl font-bold text-on-surface">Upload your new Resume</h3>
+                <h3 className="text-xl font-bold text-on-surface">Upload your new CV</h3>
                 <p className="text-on-surface-variant">PDF or DOCX, max 5MB.</p>
               </div>
               <button
@@ -480,172 +260,133 @@ export default function CandidateCVPage() {
             </div>
           </section>
 
-          <section className="space-y-6">
+          <section className="space-y-4">
             <h2 className="text-2xl font-bold tracking-tight text-on-surface px-1">My CVs</h2>
 
             {loadingList ? (
-              <div className="glass-card rounded-[2rem] p-8 text-on-surface-variant text-sm">Loading CVs...</div>
+              <div className="glass-card rounded-[2rem] p-8 text-on-surface-variant text-sm flex items-center gap-2">
+                <LoaderCircle className="w-4 h-4 animate-spin" />
+                Loading CVs...
+              </div>
             ) : cvs.length === 0 ? (
               <div className="glass-card rounded-[2rem] p-8 text-on-surface-variant text-sm">
-                No CV yet. Upload one to start extracting and reviewing.
+                No CV yet. Upload one to get started.
               </div>
             ) : (
-              cvs.map((cv) => {
-                const skills = stringifySmallList(cv.review?.matchedRequirements);
-                return (
-                  <div
-                    key={cv.id}
-                    className="glass-card rounded-[2rem] overflow-hidden group hover:shadow-xl hover:shadow-primary/5 transition-all duration-500"
-                  >
-                    <div className="p-8 flex flex-col xl:flex-row gap-8">
-                      <div className="flex-1 flex flex-col sm:flex-row gap-6">
-                        <div className="h-20 w-16 shrink-0 bg-surface-container-high rounded-xl flex items-center justify-center text-primary-dim relative overflow-hidden">
-                          <File className="w-8 h-8" />
-                          <div className="absolute bottom-0 left-0 w-full bg-primary/10 py-1 text-[8px] font-black text-center uppercase tracking-tighter">
-                            {cv.typeLabel}
-                          </div>
-                        </div>
-                        <div className="flex flex-col justify-between py-1">
-                          <div>
-                            <div className="flex flex-wrap items-center gap-3">
-                              <h3 className="text-xl font-bold text-on-surface break-all">{cv.fileName}</h3>
-                              {cv.isDefault && (
-                                <span className="bg-secondary/10 text-secondary text-[10px] font-black px-3 py-1 rounded-full uppercase tracking-widest shrink-0">
-                                  Default
-                                </span>
-                              )}
-                              <span className="bg-primary/10 text-primary text-[10px] font-black px-3 py-1 rounded-full uppercase tracking-widest shrink-0">
-                                {cv.aiStatus}
-                              </span>
-                            </div>
-                            <p className="text-on-surface-variant text-sm mt-1">
-                              Uploaded on {formatDate(cv.uploadedAt)} • {cv.sizeLabel}
-                            </p>
-                          </div>
-                          <div className="flex flex-wrap gap-4 mt-4">
-                            <button
-                              type="button"
-                              onClick={() => handlePreview(cv.id)}
-                              disabled={activePreviewId === cv.id}
-                              className="flex items-center gap-1 text-primary font-bold text-sm hover:underline disabled:opacity-70"
-                            >
-                              {activePreviewId === cv.id ? (
-                                <LoaderCircle className="w-4 h-4 animate-spin" />
-                              ) : (
-                                <Eye className="w-4 h-4" />
-                              )}
-                              View
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => handleSetDefault(cv.id)}
-                              disabled={cv.isDefault || activeDefaultId === cv.id || activeDeleteId === cv.id}
-                              className="flex items-center gap-1 text-on-surface-variant font-bold text-sm hover:text-primary transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                            >
-                              {activeDefaultId === cv.id ? (
-                                <LoaderCircle className="w-4 h-4 animate-spin" />
-                              ) : (
-                                <CheckCircle className="w-4 h-4" />
-                              )}
-                              Set as Default
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => handleDeleteCv(cv.id)}
-                              disabled={activeDeleteId === cv.id || activeDefaultId === cv.id}
-                              className="flex items-center gap-1 text-error/70 font-bold text-sm hover:text-error transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                            >
-                              {activeDeleteId === cv.id ? (
-                                <LoaderCircle className="w-4 h-4 animate-spin" />
-                              ) : (
-                                <Trash2 className="w-4 h-4" />
-                              )}
-                              Delete
-                            </button>
-                            {cv.aiStatus === "FAILED" && (
-                              <button
-                                type="button"
-                                onClick={() => handleRetryExtraction(cv.id)}
-                                className="flex items-center gap-1 text-on-surface-variant font-bold text-sm hover:text-primary transition-colors"
-                              >
-                                <RotateCcw className="w-4 h-4" /> Retry extraction
-                              </button>
-                            )}
-                          </div>
-                        </div>
-                      </div>
-
-                      <div className="xl:w-80 shrink-0 bg-surface-container-low/50 rounded-2xl p-6 flex flex-col gap-4">
-                        <div className="flex justify-between items-center">
-                          <span className="text-xs font-black uppercase tracking-widest text-on-surface-variant">
-                            AI Analysis
-                          </span>
-                          <div className="flex items-center gap-1">
-                            <span
-                              className={`text-xl font-black ${
-                                (cv.review?.fitScore ?? 0) > 80 ? "text-secondary" : "text-primary"
-                              }`}
-                            >
-                              {cv.review?.fitScore ?? "--"}
-                              {cv.review?.fitScore != null ? "%" : ""}
-                            </span>
-                            <span className="text-[10px] text-on-surface-variant font-bold">MATCH</span>
-                          </div>
-                        </div>
-
-                        {skills.length > 0 && (
-                          <div className="flex flex-wrap gap-2">
-                            {skills.map((skill) => (
-                              <span
-                                key={`${cv.id}-${skill}`}
-                                className="px-3 py-1 bg-surface-container-highest rounded-full text-[10px] font-bold text-on-surface-variant"
-                              >
-                                {skill}
-                              </span>
-                            ))}
-                          </div>
-                        )}
-
-                        <div className="bg-white/50 p-3 rounded-xl border border-secondary/10 min-h-[72px]">
-                          {cv.aiStatus === "PENDING" && (
-                            <p className="text-[11px] font-medium text-on-surface-variant italic">
-                              AI is extracting your CV. Review will be available after completion.
-                            </p>
-                          )}
-
-                          {cv.aiStatus === "FAILED" && (
-                            <p className="text-[11px] font-medium text-error italic">
-                              {cv.aiError ?? "CV extraction failed."}
-                            </p>
-                          )}
-
-                          {cv.aiStatus === "COMPLETED" && cv.review?.summary && (
-                            <p className="text-[11px] font-medium text-on-surface-variant italic">{cv.review.summary}</p>
-                          )}
-
-                          {cv.aiStatus === "COMPLETED" && !cv.review?.summary && (
-                            <p className="text-[11px] font-medium text-on-surface-variant italic">
-                              Ready for AI review. Click button below to analyze this CV.
-                            </p>
-                          )}
-                        </div>
-
-                        <button
-                          type="button"
-                          onClick={() => handleReview(cv.id)}
-                          disabled={cv.aiStatus !== "COMPLETED" || cv.reviewLoading || activeReviewId === cv.id}
-                          className="signature-gradient text-white px-4 py-2 rounded-xl text-sm font-bold disabled:opacity-50 disabled:cursor-not-allowed"
-                        >
-                          {cv.reviewLoading || activeReviewId === cv.id ? "Processing review..." : "Generate AI Review"}
-                        </button>
+              cvs.map((cv) => (
+                <div key={cv.id} className="glass-card rounded-[2rem] overflow-hidden group hover:shadow-xl hover:shadow-primary/5 transition-all duration-500">
+                  <div className="p-6 md:p-8 flex flex-col md:flex-row md:items-center gap-6">
+                    <div className="h-20 w-16 shrink-0 bg-surface-container-high rounded-xl flex items-center justify-center text-primary-dim relative overflow-hidden">
+                      <File className="w-8 h-8" />
+                      <div className="absolute bottom-0 left-0 w-full bg-primary/10 py-1 text-[8px] font-black text-center uppercase tracking-tighter">
+                        {getFileTypeLabel(cv.cvName)}
                       </div>
                     </div>
+
+                    <div className="flex-1 min-w-0">
+                      <div className="flex flex-wrap items-center gap-3">
+                        <h3 className="text-lg md:text-xl font-bold text-on-surface break-all">{cv.cvName}</h3>
+                        {cv.isDefault && (
+                          <span className="bg-secondary/10 text-secondary text-[10px] font-black px-3 py-1 rounded-full uppercase tracking-widest shrink-0">
+                            Default
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-on-surface-variant text-sm mt-1">Uploaded on {formatDate(cv.uploadedAt)}</p>
+                    </div>
+
+                    <div className="flex flex-wrap gap-4">
+                      <button
+                        type="button"
+                        onClick={() => router.push(`/candidate/cv/${cv.id}`)}
+                        className="flex items-center gap-1 text-primary font-bold text-sm hover:underline"
+                      >
+                        <Eye className="w-4 h-4" /> Xem
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => setConfirmAction({ type: "default", cvId: cv.id, cvName: cv.cvName })}
+                        disabled={cv.isDefault || activeDefaultId === cv.id || activeDeleteId === cv.id}
+                        className="flex items-center gap-1 text-on-surface-variant font-bold text-sm hover:text-primary disabled:opacity-60"
+                      >
+                        {activeDefaultId === cv.id ? (
+                          <LoaderCircle className="w-4 h-4 animate-spin" />
+                        ) : (
+                          <CheckCircle className="w-4 h-4" />
+                        )}
+                        Set Default
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => setConfirmAction({ type: "delete", cvId: cv.id, cvName: cv.cvName })}
+                        disabled={activeDeleteId === cv.id || activeDefaultId === cv.id}
+                        className="flex items-center gap-1 text-error/70 font-bold text-sm hover:text-error disabled:opacity-60"
+                      >
+                        {activeDeleteId === cv.id ? (
+                          <LoaderCircle className="w-4 h-4 animate-spin" />
+                        ) : (
+                          <Trash2 className="w-4 h-4" />
+                        )}
+                        Xoá
+                      </button>
+                    </div>
                   </div>
-                );
-              })
+                </div>
+              ))
             )}
           </section>
         </div>
+      </div>
+
+      {confirmAction && (
+        <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-[2px] flex items-center justify-center p-4">
+          <div className="w-full max-w-md glass-card rounded-3xl border border-white/50 p-6 shadow-2xl">
+            <h3 className="text-xl font-extrabold text-on-surface">
+              {confirmAction.type === "delete" ? "Xác nhận xoá CV" : "Đặt CV mặc định"}
+            </h3>
+            <p className="text-sm text-on-surface-variant mt-2 leading-relaxed">
+              {confirmAction.type === "delete"
+                ? `Bạn có chắc muốn xoá CV ${confirmAction.cvName}? Hành động này không thể hoàn tác.`
+                : `Bạn có muốn đặt CV ${confirmAction.cvName} làm CV mặc định không?`}
+            </p>
+
+            <div className="flex justify-end gap-3 mt-6">
+              <button
+                type="button"
+                onClick={() => setConfirmAction(null)}
+                className="px-4 py-2 rounded-xl text-sm font-bold text-on-surface-variant hover:bg-surface-container-high"
+              >
+                Huỷ
+              </button>
+              <button
+                type="button"
+                onClick={() => void confirmCurrentAction()}
+                className={`px-4 py-2 rounded-xl text-sm font-bold text-white ${
+                  confirmAction.type === "delete" ? "bg-error hover:bg-error-dim" : "signature-gradient"
+                }`}
+              >
+                {confirmAction.type === "delete" ? "Xoá" : "Xác nhận"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      <div className="fixed top-5 right-5 z-50 flex flex-col gap-2">
+        {toasts.map((toast) => (
+          <div
+            key={toast.id}
+            className={`min-w-[240px] max-w-[360px] rounded-xl px-4 py-3 text-sm font-semibold shadow-lg border glass-card ${
+              toast.type === "success"
+                ? "border-secondary/20 text-on-surface"
+                : "border-error/30 text-error"
+            }`}
+          >
+            {toast.message}
+          </div>
+        ))}
       </div>
     </div>
   );
