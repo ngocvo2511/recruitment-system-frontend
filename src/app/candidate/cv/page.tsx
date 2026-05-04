@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { User, FileText, Settings, Lightbulb, CloudUpload, File, Eye, Trash2, LoaderCircle, CheckCircle } from "lucide-react";
+import { User, FileText, Settings, Lightbulb, CloudUpload, File, Eye, Trash2, LoaderCircle, CheckCircle, Sparkles } from "lucide-react";
 import { ApiError, CvListItemResponse, deleteCv, getMyCvs, setDefaultCv, uploadCv } from "@/lib/api/cv";
 
 type ConfirmAction = {
@@ -221,41 +221,42 @@ export default function CandidateCVPage() {
             </div>
           )}
 
-          <section className="relative group">
-            <div className="absolute -inset-1 signature-gradient rounded-[2rem] blur opacity-20 group-hover:opacity-30 transition-opacity"></div>
-            <div
-              className="relative glass-card border-dashed border-2 border-primary/30 p-10 rounded-[2rem] flex flex-col items-center text-center gap-4 hover:border-primary transition-all bg-white/40"
-              role="button"
-              tabIndex={0}
-              onClick={handleOpenFileDialog}
-              onKeyDown={(event) => {
-                if (event.key === "Enter" || event.key === " ") {
-                  event.preventDefault();
-                  handleOpenFileDialog();
-                }
-              }}
-            >
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept=".pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
-                className="hidden"
-                onChange={handleFileChange}
-              />
-              <div className="h-14 w-14 signature-gradient text-white rounded-full flex items-center justify-center shadow-lg shadow-primary/20">
-                {uploading ? <LoaderCircle className="w-7 h-7 animate-spin" /> : <CloudUpload className="w-7 h-7" />}
-              </div>
-              <div>
-                <h3 className="text-xl font-bold text-on-surface">Upload your new CV</h3>
-                <p className="text-on-surface-variant">PDF or DOCX, max 5MB.</p>
-              </div>
+          <section className="relative">
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept=".pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+              className="hidden"
+              onChange={handleFileChange}
+            />
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 w-full">
               <button
                 type="button"
                 disabled={uploading}
                 onClick={handleOpenFileDialog}
-                className="mt-2 signature-gradient text-white px-8 py-3 rounded-full font-bold shadow-md hover:scale-105 active:scale-95 transition-transform z-10 disabled:opacity-70 disabled:cursor-not-allowed"
+                className="rounded-[1.5rem] border border-white/40 bg-white/80 px-6 py-6 flex flex-col items-center gap-3 shadow-sm transition-all hover:-translate-y-1 hover:shadow-xl hover:shadow-primary/10 disabled:opacity-70"
               >
-                {uploading ? "Uploading..." : "Select File"}
+                <div className="h-12 w-12 signature-gradient text-white rounded-full flex items-center justify-center shadow-lg shadow-primary/20">
+                  {uploading ? <LoaderCircle className="w-6 h-6 animate-spin" /> : <CloudUpload className="w-6 h-6" />}
+                </div>
+                <div>
+                  <h3 className="text-lg font-bold text-on-surface">Upload CV</h3>
+                  <p className="text-on-surface-variant text-sm">PDF or DOCX, max 5MB.</p>
+                </div>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => router.push("/candidate/cv/builder")}
+                className="rounded-[1.5rem] border border-primary/20 bg-primary/5 px-6 py-6 flex flex-col items-center gap-3 shadow-sm transition-all hover:-translate-y-1 hover:shadow-xl hover:shadow-primary/10"
+              >
+                <div className="h-12 w-12 bg-primary/90 text-white rounded-full flex items-center justify-center shadow-lg shadow-primary/20">
+                  <Sparkles className="w-6 h-6" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-bold text-on-surface">Create from template</h3>
+                  <p className="text-on-surface-variant text-sm">Start building with a ready layout.</p>
+                </div>
               </button>
             </div>
           </section>
