@@ -3,7 +3,7 @@
 import { useSearchParams, useRouter } from "next/navigation";
 import { Suspense, useState } from "react";
 import Link from "next/link";
-import { Mail, Lock, Check, Eye } from "lucide-react";
+import { Mail, Lock, Check, Eye, EyeOff, Loader2 } from "lucide-react";
 
 function LoginForm() {
   const searchParams = useSearchParams();
@@ -12,14 +12,43 @@ function LoginForm() {
   
   const [role, setRole] = useState(initialRole);
   const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
   
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    // mock login logic based on role
-    if (role === 'employer') {
-      router.push("/recruiter/dashboard");
-    } else {
-      router.push("/candidate/jobs");
+    setLoading(true);
+    setError("");
+
+    try {
+      const response = await fetch('http://localhost:8080/api/auth/authenticate', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email, password }),
+      });
+
+      const data = await response.json();
+
+      if (response.ok && data.code === 1000) {
+        const token = data.result.token;
+        localStorage.setItem('token', token);
+        
+        if (role === 'employer') {
+          router.push("/recruiter/dashboard");
+        } else {
+          router.push("/candidate/jobs");
+        }
+      } else {
+        setError(data.message || 'Login failed. Please check your credentials.');
+      }
+    } catch (err) {
+      setError('An error occurred while connecting to the server.');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -63,6 +92,11 @@ function LoginForm() {
 
           {/* Input Groups */}
           <div className="space-y-4">
+            {error && (
+              <div className="p-3 text-sm text-red-500 bg-red-100/10 border border-red-500/20 rounded-xl">
+                {error}
+              </div>
+            )}
             <div className="group">
               <label className="block text-[10px] font-bold uppercase tracking-[0.1em] text-on-surface-variant mb-2 px-4">
                 Email Address
@@ -92,12 +126,14 @@ function LoginForm() {
                 </div>
                 <input 
                   required
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
                   className="w-full pl-12 pr-12 py-4 bg-surface-container-high/50 border-none rounded-xl focus:ring-2 focus:ring-primary/40 focus:bg-white transition-all outline-none placeholder:text-outline-variant" 
                   placeholder="••••••••" 
-                  type="password"
+                  type={showPassword ? "text" : "password"}
                 />
-                <button className="absolute inset-y-0 right-4 flex items-center text-outline-variant hover:text-on-surface" type="button">
-                  <Eye className="w-5 h-5" />
+                <button onClick={() => setShowPassword(!showPassword)} className="absolute inset-y-0 right-4 flex items-center text-outline-variant hover:text-on-surface" type="button">
+                  {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                 </button>
               </div>
             </div>
@@ -117,9 +153,13 @@ function LoginForm() {
 
           {/* CTA */}
           <div className="pt-4">
-            <button type="submit" className="w-full signature-gradient text-white font-bold py-4 rounded-full shadow-[0_12px_24px_-8px_rgba(0,80,212,0.4)] hover:scale-[1.02] hover:shadow-[0_20px_32px_-8px_rgba(0,80,212,0.5)] active:scale-95 transition-all duration-300 flex items-center justify-center gap-2">
-              Login
-              <span className="material-symbols-outlined text-[20px]">arrow_forward</span>
+            <button disabled={loading} type="submit" className="w-full signature-gradient text-white font-bold py-4 rounded-full shadow-[0_12px_24px_-8px_rgba(0,80,212,0.4)] hover:scale-[1.02] hover:shadow-[0_20px_32px_-8px_rgba(0,80,212,0.5)] active:scale-95 transition-all duration-300 flex items-center justify-center gap-2 disabled:opacity-70 disabled:pointer-events-none">
+              {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : (
+                <>
+                  Login
+                  <span className="material-symbols-outlined text-[20px]">arrow_forward</span>
+                </>
+              )}
             </button>
           </div>
         </form>
