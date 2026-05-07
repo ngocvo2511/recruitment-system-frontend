@@ -1,7 +1,132 @@
+"use client";
+
 import Link from "next/link";
-import { User, FileText, Settings, Lightbulb, Camera, Verified, Phone, Mail, TrendingUp, History, Bookmark, Award } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import {
+  User,
+  FileText,
+  Settings,
+  Lightbulb,
+  Camera,
+  Verified,
+  Phone,
+  Mail,
+  TrendingUp,
+  History,
+  Bookmark,
+  Award,
+  Sparkles,
+  LoaderCircle,
+} from "lucide-react";
+import {
+  ApiError,
+  CandidateProfileResponse,
+  getCandidateProfile,
+  updateCandidateProfile,
+} from "@/lib/api/profile";
+
+type ToastItem = {
+  id: number;
+  type: "success" | "error";
+  message: string;
+};
 
 export default function CandidateProfilePage() {
+  const [profile, setProfile] = useState<CandidateProfileResponse | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [toasts, setToasts] = useState<ToastItem[]>([]);
+  const [fullName, setFullName] = useState("");
+  const [headline, setHeadline] = useState("");
+  const [phoneNumber, setPhoneNumber] = useState("");
+  const [openToWork, setOpenToWork] = useState(false);
+  const [skillInput, setSkillInput] = useState("");
+  const [skills, setSkills] = useState<string[]>([]);
+
+  const addToast = (type: ToastItem["type"], message: string) => {
+    const id = Date.now() + Math.floor(Math.random() * 1000);
+    setToasts((prev) => [...prev, { id, type, message }]);
+    window.setTimeout(() => {
+      setToasts((prev) => prev.filter((item) => item.id !== id));
+    }, 3200);
+  };
+
+  const loadProfile = async () => {
+    setLoading(true);
+    setErrorMessage(null);
+    try {
+      const data = await getCandidateProfile();
+      setProfile(data);
+      setFullName(data.fullName ?? "");
+      setHeadline(data.headline ?? "");
+      setPhoneNumber(data.phoneNumber ?? "");
+      setOpenToWork(Boolean(data.openToWork));
+      setSkills(data.skills ?? []);
+    } catch (error) {
+      if (error instanceof ApiError) {
+        setErrorMessage(error.message);
+      } else {
+        setErrorMessage("Could not load profile.");
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    const timer = window.setTimeout(() => {
+      void loadProfile();
+    }, 0);
+
+    return () => window.clearTimeout(timer);
+  }, []);
+
+  const skillChips = useMemo(() => skills.filter(Boolean), [skills]);
+
+  const handleAddSkill = () => {
+    const trimmed = skillInput.trim();
+    if (!trimmed) {
+      return;
+    }
+    if (skills.some((item) => item.toLowerCase() === trimmed.toLowerCase())) {
+      setSkillInput("");
+      return;
+    }
+    setSkills((prev) => [...prev, trimmed]);
+    setSkillInput("");
+  };
+
+  const handleRemoveSkill = (skill: string) => {
+    setSkills((prev) => prev.filter((item) => item !== skill));
+  };
+
+  const handleSave = async () => {
+    setSaving(true);
+    setErrorMessage(null);
+    try {
+      await updateCandidateProfile({
+        fullName,
+        headline,
+        phoneNumber,
+        openToWork,
+        confirmedSkills: skills,
+      });
+      addToast("success", "Profile updated successfully.");
+      await loadProfile();
+    } catch (error) {
+      if (error instanceof ApiError) {
+        setErrorMessage(error.message);
+        addToast("error", error.message);
+      } else {
+        setErrorMessage("Could not save profile.");
+        addToast("error", "Could not save profile.");
+      }
+    } finally {
+      setSaving(false);
+    }
+  };
+
   return (
     <div className="max-w-7xl mx-auto px-4 md:px-8 w-full animate-fade-in-up flex flex-col md:flex-row gap-8">
       
@@ -42,22 +167,41 @@ export default function CandidateProfilePage() {
       {/* Profile Content */}
       <section className="flex-grow space-y-8 min-w-0">
         <div className="glass-card rounded-[2rem] p-8 md:p-12 shadow-[0_8px_40px_rgba(0,0,0,0.02)] border border-white/40">
+          {errorMessage && (
+            <div className="rounded-xl border border-error/30 bg-error/10 text-error px-4 py-3 text-sm font-medium mb-6">
+              {errorMessage}
+            </div>
+          )}
+
+          {loading ? (
+            <div className="rounded-2xl bg-surface-container-high/50 border border-white/40 p-6 text-sm text-on-surface-variant flex items-center gap-2">
+              <LoaderCircle className="w-4 h-4 animate-spin" />
+              Loading profile...
+            </div>
+          ) : (
+            <>
           
           {/* Profile Header */}
           <div className="flex flex-col md:flex-row items-center gap-8 mb-12">
             <div className="relative group">
               <div className="w-32 h-32 md:w-36 md:h-36 rounded-full overflow-hidden border-4 border-white shadow-xl">
-                <img className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" src="https://i.pravatar.cc/150?img=1" alt="Profile avatar" />
+                <img
+                  className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+                  src={profile?.profilePictureUrl ?? "https://i.pravatar.cc/150?img=1"}
+                  alt="Profile avatar"
+                />
               </div>
               <button className="absolute inset-0 flex items-center justify-center bg-blue-900/40 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-300">
                 <Camera className="w-8 h-8"/>
               </button>
             </div>
             <div className="text-center md:text-left">
-              <h2 className="text-3xl font-black tracking-tight mb-2 bg-gradient-to-br from-blue-700 to-purple-600 bg-clip-text text-transparent">Alexander Sterling</h2>
+              <h2 className="text-3xl font-black tracking-tight mb-2 bg-gradient-to-br from-blue-700 to-purple-600 bg-clip-text text-transparent">
+                {fullName || "Your Name"}
+              </h2>
               <p className="text-on-surface-variant font-medium flex items-center justify-center md:justify-start gap-2">
                 <Verified className="w-4 h-4 text-primary fill-primary/20" />
-                Senior Product Designer
+                {headline || "Add your headline"}
               </p>
             </div>
           </div>
@@ -66,21 +210,86 @@ export default function CandidateProfilePage() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
             <div className="space-y-6">
               
-              <div className="group">
-                <label className="block text-[10px] uppercase font-bold tracking-widest text-on-surface-variant mb-2 px-1">Full Name</label>
-                <div className="relative">
-                  <User className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-on-surface-variant" />
-                  <input className="w-full pl-12 pr-4 py-4 bg-surface-container-high/50 border-none rounded-xl focus:ring-2 focus:ring-primary/40 text-on-surface font-medium transition-all outline-none" type="text" defaultValue="Alexander Sterling"/>
+                <div className="group">
+                  <label className="block text-[10px] uppercase font-bold tracking-widest text-on-surface-variant mb-2 px-1">Full Name</label>
+                  <div className="relative">
+                    <User className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-on-surface-variant" />
+                    <input
+                      className="w-full pl-12 pr-4 py-4 bg-surface-container-high/50 border-none rounded-xl focus:ring-2 focus:ring-primary/40 text-on-surface font-medium transition-all outline-none"
+                      type="text"
+                      value={fullName}
+                      onChange={(event) => setFullName(event.target.value)}
+                    />
+                  </div>
                 </div>
-              </div>
 
-              <div className="group">
-                <label className="block text-[10px] uppercase font-bold tracking-widest text-on-surface-variant mb-2 px-1">Phone Number</label>
-                <div className="relative">
-                  <Phone className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-on-surface-variant" />
-                  <input className="w-full pl-12 pr-4 py-4 bg-surface-container-high/50 border-none rounded-xl focus:ring-2 focus:ring-primary/40 text-on-surface font-medium transition-all outline-none" type="tel" defaultValue="+1 (555) 234-5678"/>
+                <div className="group">
+                  <label className="block text-[10px] uppercase font-bold tracking-widest text-on-surface-variant mb-2 px-1">Headline</label>
+                  <div className="relative">
+                    <Sparkles className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-on-surface-variant" />
+                    <input
+                      className="w-full pl-12 pr-4 py-4 bg-surface-container-high/50 border-none rounded-xl focus:ring-2 focus:ring-primary/40 text-on-surface font-medium transition-all outline-none"
+                      type="text"
+                      value={headline}
+                      onChange={(event) => setHeadline(event.target.value)}
+                      placeholder="e.g. Senior Product Designer"
+                    />
+                  </div>
                 </div>
-              </div>
+
+                <div className="group">
+                  <label className="block text-[10px] uppercase font-bold tracking-widest text-on-surface-variant mb-2 px-1">Phone Number</label>
+                  <div className="relative">
+                    <Phone className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-on-surface-variant" />
+                    <input
+                      className="w-full pl-12 pr-4 py-4 bg-surface-container-high/50 border-none rounded-xl focus:ring-2 focus:ring-primary/40 text-on-surface font-medium transition-all outline-none"
+                      type="tel"
+                      value={phoneNumber}
+                      onChange={(event) => setPhoneNumber(event.target.value)}
+                    />
+                  </div>
+                </div>
+
+                <div className="group">
+                  <label className="block text-[10px] uppercase font-bold tracking-widest text-on-surface-variant mb-2 px-1">Skills</label>
+                  <div className="flex flex-wrap gap-2 mb-3">
+                    {skillChips.length === 0 ? (
+                      <span className="text-xs text-on-surface-variant">No skills added yet.</span>
+                    ) : (
+                      skillChips.map((skill) => (
+                        <span
+                          key={skill}
+                          className="inline-flex items-center gap-2 bg-surface-container-highest px-3 py-1 rounded-full text-xs font-semibold text-on-surface-variant"
+                        >
+                          {skill}
+                          <button
+                            type="button"
+                            onClick={() => handleRemoveSkill(skill)}
+                            className="text-xs text-on-surface-variant hover:text-on-surface"
+                          >
+                            ✕
+                          </button>
+                        </span>
+                      ))
+                    )}
+                  </div>
+                  <div className="flex gap-2">
+                    <input
+                      className="flex-1 px-4 py-3 bg-surface-container-high/50 border-none rounded-xl focus:ring-2 focus:ring-primary/40 text-on-surface font-medium transition-all outline-none"
+                      type="text"
+                      value={skillInput}
+                      onChange={(event) => setSkillInput(event.target.value)}
+                      placeholder="Type a skill and press Add"
+                    />
+                    <button
+                      type="button"
+                      onClick={handleAddSkill}
+                      className="px-4 py-3 rounded-xl text-xs font-bold text-white bg-primary hover:bg-primary-dim"
+                    >
+                      Add
+                    </button>
+                  </div>
+                </div>
 
               <div className="group">
                 <label className="block text-[10px] uppercase font-bold tracking-widest text-on-surface-variant mb-2 px-1">Email Address</label>
@@ -94,25 +303,62 @@ export default function CandidateProfilePage() {
 
             {/* Side Info / Settings Card */}
             <div className="flex flex-col justify-between">
-              <div className="bg-surface-container-high/30 rounded-2xl p-6 border border-white/60 shadow-sm">
-                <h5 className="text-sm font-bold text-on-surface mb-4">Contact Privacy</h5>
-                <p className="text-sm text-on-surface-variant leading-relaxed mb-6">
-                    Your personal details are only shared with employers you actively apply to. Control your visibility in settings.
-                </p>
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-6 bg-primary rounded-full relative p-1 cursor-pointer">
-                    <div className="w-4 h-4 bg-white rounded-full absolute right-1 shadow-sm"></div>
+                <div className="bg-surface-container-high/30 rounded-2xl p-6 border border-white/60 shadow-sm space-y-5">
+                  <div>
+                    <h5 className="text-sm font-bold text-on-surface mb-2">Open to Work</h5>
+                    <p className="text-sm text-on-surface-variant leading-relaxed">
+                      Let recruiters know you are actively exploring new opportunities.
+                    </p>
                   </div>
-                  <span className="text-xs font-bold text-on-surface-variant uppercase tracking-widest">Public Profile</span>
+                  <button
+                    type="button"
+                    onClick={() => setOpenToWork((prev) => !prev)}
+                    className={`w-full flex items-center justify-between px-4 py-3 rounded-xl border transition-colors ${
+                      openToWork
+                        ? "border-secondary/40 bg-secondary/10 text-secondary"
+                        : "border-white/60 bg-white/70 text-on-surface-variant"
+                    }`}
+                  >
+                    <span className="text-xs font-bold uppercase tracking-widest">
+                      {openToWork ? "Actively Looking" : "Not Looking"}
+                    </span>
+                    <span
+                      className={`w-11 h-6 rounded-full relative transition-colors ${
+                        openToWork ? "bg-secondary" : "bg-surface-container-high"
+                      }`}
+                    >
+                      <span
+                        className={`w-4 h-4 bg-white rounded-full absolute top-1 transition-transform ${
+                          openToWork ? "translate-x-6" : "translate-x-1"
+                        }`}
+                      ></span>
+                    </span>
+                  </button>
                 </div>
-              </div>
 
               <div className="mt-8 flex justify-end gap-4 h-min">
-                <button className="px-8 py-3 rounded-full font-bold text-sm text-on-surface-variant hover:bg-surface-container-high transition-all">Discard</button>
-                <button className="signature-gradient text-white px-10 py-3 rounded-full font-bold text-sm shadow-lg hover:scale-[1.02] active:scale-95 transition-transform flex items-center justify-center">Save Changes</button>
+                <button
+                  className="px-8 py-3 rounded-full font-bold text-sm text-on-surface-variant hover:bg-surface-container-high transition-all"
+                  type="button"
+                  onClick={() => void loadProfile()}
+                  disabled={saving}
+                >
+                  Discard
+                </button>
+                <button
+                  className="signature-gradient text-white px-10 py-3 rounded-full font-bold text-sm shadow-lg hover:scale-[1.02] active:scale-95 transition-transform flex items-center justify-center gap-2"
+                  type="button"
+                  onClick={() => void handleSave()}
+                  disabled={saving}
+                >
+                  {saving && <LoaderCircle className="w-4 h-4 animate-spin" />}
+                  Save Changes
+                </button>
               </div>
             </div>
           </div>
+            </>
+          )}
         </div>
 
         {/* Experience Bento Grid Concept */}
@@ -147,6 +393,21 @@ export default function CandidateProfilePage() {
           
         </div>
       </section>
+
+      <div className="fixed top-5 right-5 z-50 flex flex-col gap-2">
+        {toasts.map((toast) => (
+          <div
+            key={toast.id}
+            className={`min-w-[240px] max-w-[360px] rounded-xl px-4 py-3 text-sm font-semibold shadow-lg border glass-card ${
+              toast.type === "success"
+                ? "border-secondary/20 text-on-surface"
+                : "border-error/30 text-error"
+            }`}
+          >
+            {toast.message}
+          </div>
+        ))}
+      </div>
     </div>
   );
 }
