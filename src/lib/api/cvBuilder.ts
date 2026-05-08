@@ -20,6 +20,7 @@ export type CvBuilderDraftResponse = {
   templateName: string;
   title?: string | null;
   contentJson: string;
+  version?: number;
   status: "DRAFT" | "PUBLISHED";
   validationStatus?: "VALID" | "HAS_WARNINGS" | "HAS_ERRORS";
   validationIssues?: CvBuilderValidationIssue[];
@@ -46,6 +47,7 @@ export type CreateDraftFromTemplateRequest = {
 export type UpdateCvBuilderDraftRequest = {
   title?: string;
   contentJson: string;
+  version?: number;
 };
 
 export type AddCustomSectionRequest = {

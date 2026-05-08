@@ -23,6 +23,10 @@ import {
   reorderCvBuilderSections,
   updateCvBuilderDraft,
 } from "@/lib/api/cvBuilder";
+import { migrateLegacyDraft } from "@/editor/core/legacyAdapter";
+import { createEditorStore } from "@/editor/core/store";
+import { EditorCanvas } from "@/editor/rendering/EditorCanvas";
+import type { CvBlock, CvDocument, CvRichText } from "@/editor/core/schema";
 
 type BuilderSection = {
   sectionId: string;
@@ -63,6 +67,9 @@ export default function CvBuilderDraftPage() {
     saving: false,
     error: null,
   });
+  const [documentModel, setDocumentModel] = useState<string | null>(null);
+  const [editorStore, setEditorStore] = useState<ReturnType<typeof createEditorStore> | null>(null);
+  const [selectedBlockId, setSelectedBlockId] = useState<string | null>(null);
   const [sectionTitle, setSectionTitle] = useState("");
   const [sectionType, setSectionType] = useState("custom");
   const [sectionData, setSectionData] = useState("{}");
@@ -74,9 +81,18 @@ export default function CvBuilderDraftPage() {
 
   const applyServerDraft = useCallback((draft: CvBuilderDraftResponse) => {
     const parsed = JSON.parse(draft.contentJson) as BuilderContent;
+    const migrated = migrateLegacyDraft({ contentJson: draft.contentJson, templateCode: draft.templateCode });
     skipAutoSaveRef.current = true;
     lastContentRef.current = draft.contentJson;
     setState((prev) => ({ ...prev, data: draft, content: parsed }));
+    setDocumentModel(JSON.stringify(migrated));
+    setEditorStore((prev) => {
+      if (!prev) {
+        return createEditorStore(migrated);
+      }
+      prev.setDocument(migrated);
+      return prev;
+    });
   }, []);
 
   const loadDraft = useCallback(async () => {
@@ -86,7 +102,16 @@ export default function CvBuilderDraftPage() {
       skipAutoSaveRef.current = true;
       lastContentRef.current = draft.contentJson;
       const parsed = JSON.parse(draft.contentJson) as BuilderContent;
+      const migrated = migrateLegacyDraft({ contentJson: draft.contentJson, templateCode: draft.templateCode });
       setState({ data: draft, content: parsed, loading: false, saving: false, error: null });
+      setDocumentModel(JSON.stringify(migrated));
+      setEditorStore((prev) => {
+        if (!prev) {
+          return createEditorStore(migrated);
+        }
+        prev.setDocument(migrated);
+        return prev;
+      });
     } catch (error) {
       if (error instanceof ApiError) {
         setState((prev) => ({ ...prev, loading: false, error: error.message }));
@@ -95,6 +120,122 @@ export default function CvBuilderDraftPage() {
       }
     }
   }, [draftId]);
+
+  useEffect(() => {
+    if (!editorStore) {
+      return;
+    }
+    return editorStore.subscribe(() => {
+      const nextDocument = editorStore.getState().document;
+      const nextSelected = editorStore.getState().selectedBlockId;
+      setDocumentModel(JSON.stringify(nextDocument));
+      setSelectedBlockId(nextSelected);
+    });
+  }, [editorStore]);
+
+  const createId = () => {
+    if (typeof crypto !== "undefined" && "randomUUID" in crypto) {
+      return crypto.randomUUID();
+    }
+    return `block-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+  };
+
+  const createEmptyRichText = (): CvRichText => ({
+    type: "doc",
+    blocks: [
+      {
+        type: "paragraph",
+        spans: [{ text: "" }],
+      },
+    ],
+  });
+
+  const createSectionBlock = (title: string): CvBlock => ({
+    id: createId(),
+    type: "section",
+    props: {
+      sectionType: "custom",
+      title,
+      data: { content: "" },
+    },
+  });
+
+  const createTextBlock = (title?: string): CvBlock => ({
+    id: createId(),
+    type: "text",
+    props: {
+      title,
+      content: createEmptyRichText(),
+    },
+  });
+
+  const handleAddBlock = (block: CvBlock) => {
+    if (!editorStore) {
+      return;
+    }
+    editorStore.addBlock(block);
+  };
+
+  const handleDuplicateSelected = () => {
+    if (!editorStore) {
+      return;
+    }
+    const { document, selectedBlockId } = editorStore.getState();
+    if (!selectedBlockId) {
+      return;
+    }
+    const source = document.blocks.find((block) => block.id === selectedBlockId);
+    if (!source) {
+      return;
+    }
+    const duplicate: CvBlock = {
+      ...source,
+      id: createId(),
+    };
+    editorStore.addBlock(duplicate);
+  };
+
+  const handleDeleteSelected = () => {
+    if (!editorStore) {
+      return;
+    }
+    const selectedId = editorStore.getState().selectedBlockId;
+    if (!selectedId) {
+      return;
+    }
+    editorStore.removeBlock(selectedId);
+  };
+
+  useEffect(() => {
+    if (!editorStore) {
+      return;
+    }
+    const payload = documentModel;
+    if (!payload || !state.data || state.loading || state.saving) {
+      return;
+    }
+    if (payload === lastContentRef.current) {
+      return;
+    }
+    if (skipAutoSaveRef.current) {
+      skipAutoSaveRef.current = false;
+      lastContentRef.current = payload;
+      return;
+    }
+
+    if (saveTimerRef.current) {
+      window.clearTimeout(saveTimerRef.current);
+    }
+    saveTimerRef.current = window.setTimeout(() => {
+      void handleSave(payload);
+    }, 800);
+
+    return () => {
+      if (saveTimerRef.current) {
+        window.clearTimeout(saveTimerRef.current);
+      }
+    };
+  }, [documentModel, editorStore, handleSave, state.data, state.loading, state.saving]);
 
   useEffect(() => {
     const timer = window.setTimeout(() => {
@@ -129,27 +270,96 @@ export default function CvBuilderDraftPage() {
 
   const overallStatus = state.data?.validationStatus ?? "VALID";
 
-  const handleSave = useCallback(async () => {
+  const previewSections = useMemo(() => {
+    const grouped = {
+      header: [] as BuilderSection[],
+      left: [] as BuilderSection[],
+      main: [] as BuilderSection[],
+      right: [] as BuilderSection[],
+      footer: [] as BuilderSection[],
+    };
+    sections.forEach((section) => {
+      if (section.visible === false) {
+        return;
+      }
+      const slot = section.slot ?? "main";
+      if (slot === "header") {
+        grouped.header.push(section);
+      } else if (slot === "left") {
+        grouped.left.push(section);
+      } else if (slot === "right") {
+        grouped.right.push(section);
+      } else if (slot === "footer") {
+        grouped.footer.push(section);
+      } else {
+        grouped.main.push(section);
+      }
+    });
+    return grouped;
+  }, [sections]);
+
+  const renderSectionBody = (section: BuilderSection) => {
+    if (!section.data || typeof section.data !== "object") {
+      return <div className="text-[11px] text-on-surface-variant">No data</div>;
+    }
+
+    const data = section.data as Record<string, unknown>;
+    if ("content" in data && typeof data.content === "string") {
+      return <p className="text-[11px] text-on-surface-variant leading-relaxed">{data.content}</p>;
+    }
+
+    if (Array.isArray(data)) {
+      return (
+        <ul className="text-[11px] text-on-surface-variant space-y-1">
+          {data.slice(0, 4).map((item, idx) => (
+            <li key={`${section.sectionId}-item-${idx}`}>• {String(item)}</li>
+          ))}
+        </ul>
+      );
+    }
+
+    const entries = Object.entries(data).slice(0, 4);
+    if (entries.length === 0) {
+      return <div className="text-[11px] text-on-surface-variant">No data</div>;
+    }
+
+    return (
+      <div className="text-[11px] text-on-surface-variant space-y-1">
+        {entries.map(([key, value]) => (
+          <div key={`${section.sectionId}-${key}`}>• {key}: {String(value)}</div>
+        ))}
+      </div>
+    );
+  };
+
+  const handleSave = useCallback(async (overrideContentJson?: string) => {
     if (!state.content || !state.data) {
       return;
     }
     setState((prev) => ({ ...prev, saving: true }));
     try {
+      const nextContentJson = overrideContentJson ?? documentModel ?? JSON.stringify(state.content);
       const payload = {
         title: state.data.title ?? "",
-        contentJson: JSON.stringify(state.content),
+        contentJson: nextContentJson,
+        version: state.data.version,
       };
       const updated = await updateCvBuilderDraft(draftId, payload);
       applyServerDraft(updated);
       setState((prev) => ({ ...prev, saving: false }));
     } catch (error) {
       if (error instanceof ApiError) {
+        if (error.status === 409 || error.code === 2020) {
+          setState((prev) => ({ ...prev, error: "Draft was updated elsewhere. Reloading latest...", saving: false }));
+          void loadDraft();
+          return;
+        }
         setState((prev) => ({ ...prev, error: error.message, saving: false }));
       } else {
         setState((prev) => ({ ...prev, error: "Could not save draft.", saving: false }));
       }
     }
-  }, [applyServerDraft, draftId, state.content, state.data]);
+  }, [applyServerDraft, documentModel, draftId, state.content, state.data]);
 
   useEffect(() => {
     if (!state.content || !state.data || state.loading || state.saving) {
@@ -169,7 +379,7 @@ export default function CvBuilderDraftPage() {
       window.clearTimeout(saveTimerRef.current);
     }
     saveTimerRef.current = window.setTimeout(() => {
-      void handleSave();
+      void handleSave(contentJson);
     }, 800);
 
     return () => {
@@ -179,30 +389,14 @@ export default function CvBuilderDraftPage() {
     };
   }, [handleSave, state.content, state.data, state.loading, state.saving]);
 
-  const handleAddSection = async () => {
+  const handleAddSection = () => {
     if (!sectionTitle.trim()) {
       setState((prev) => ({ ...prev, error: "Section title is required." }));
       return;
     }
-    setState((prev) => ({ ...prev, saving: true, error: null }));
-    try {
-      const payload = {
-        sectionTitle: sectionTitle.trim(),
-        sectionType,
-        dataJson: sectionData,
-      };
-      const updated = await addCvBuilderSection(draftId, payload);
-      applyServerDraft(updated);
-      setState((prev) => ({ ...prev, saving: false }));
-      setSectionTitle("");
-      setSectionData("{}");
-    } catch (error) {
-      if (error instanceof ApiError) {
-        setState((prev) => ({ ...prev, error: error.message, saving: false }));
-      } else {
-        setState((prev) => ({ ...prev, error: "Could not add section.", saving: false }));
-      }
-    }
+    handleAddBlock(createSectionBlock(sectionTitle.trim()));
+    setSectionTitle("");
+    setSectionData("{}");
   };
 
   const handleDeleteSection = async (sectionId: string) => {
@@ -348,7 +542,41 @@ export default function CvBuilderDraftPage() {
 
       <div className="mt-8 grid grid-cols-1 lg:grid-cols-3 gap-6">
         <section className="lg:col-span-2 glass-card rounded-[2rem] p-6 border border-white/30 space-y-4">
-          <h2 className="text-xl font-bold text-on-surface">Sections</h2>
+          <div className="flex items-center justify-between gap-4">
+            <h2 className="text-xl font-bold text-on-surface">Blocks</h2>
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => handleAddBlock(createSectionBlock("Custom Section"))}
+                className="px-3 py-1.5 rounded-full text-xs font-bold bg-primary text-white"
+              >
+                Add Section Block
+              </button>
+              <button
+                type="button"
+                onClick={() => handleAddBlock(createTextBlock("Text"))}
+                className="px-3 py-1.5 rounded-full text-xs font-bold bg-secondary text-white"
+              >
+                Add Text Block
+              </button>
+              <button
+                type="button"
+                onClick={handleDuplicateSelected}
+                disabled={!selectedBlockId}
+                className="px-3 py-1.5 rounded-full text-xs font-bold bg-surface-container-high text-on-surface-variant disabled:opacity-50"
+              >
+                Duplicate
+              </button>
+              <button
+                type="button"
+                onClick={handleDeleteSelected}
+                disabled={!selectedBlockId}
+                className="px-3 py-1.5 rounded-full text-xs font-bold bg-error/10 text-error disabled:opacity-50"
+              >
+                Delete
+              </button>
+            </div>
+          </div>
           {sections.length === 0 ? (
             <div className="text-sm text-on-surface-variant">No sections yet.</div>
           ) : (
@@ -488,6 +716,78 @@ export default function CvBuilderDraftPage() {
               ))}
             </div>
           )}
+        </section>
+
+        <section className="glass-card rounded-[2rem] p-6 border border-white/30 space-y-4">
+          <h2 className="text-xl font-bold text-on-surface">Preview</h2>
+          {documentModel && (
+            <div className="rounded-xl border border-surface-container-high bg-surface-container-high/30 px-3 py-2 text-[11px] text-on-surface-variant">
+              Block model ready for rebuild. Document snapshot size: {documentModel.length} chars.
+            </div>
+          )}
+          {editorStore && (
+            <div className="rounded-2xl border border-surface-container-high bg-white p-4 shadow-inner">
+              <EditorCanvas store={editorStore} />
+            </div>
+          )}
+          <div className="bg-white rounded-2xl border border-surface-container-high p-4 shadow-inner">
+            <div className="space-y-3">
+              {previewSections.header.map((section) => (
+                <div key={`preview-header-${section.sectionId}`}>
+                  <div className="text-xs font-black uppercase tracking-widest text-on-surface-variant">
+                    {section.title}
+                  </div>
+                  {renderSectionBody(section)}
+                </div>
+              ))}
+            </div>
+
+            <div className="mt-4 grid grid-cols-1 sm:grid-cols-[1fr_2fr_1fr] gap-4">
+              <div className="space-y-3">
+                {previewSections.left.map((section) => (
+                  <div key={`preview-left-${section.sectionId}`}>
+                    <div className="text-[10px] font-black uppercase tracking-widest text-on-surface-variant">
+                      {section.title}
+                    </div>
+                    {renderSectionBody(section)}
+                  </div>
+                ))}
+              </div>
+              <div className="space-y-3">
+                {previewSections.main.map((section) => (
+                  <div key={`preview-main-${section.sectionId}`}>
+                    <div className="text-[10px] font-black uppercase tracking-widest text-on-surface-variant">
+                      {section.title}
+                    </div>
+                    {renderSectionBody(section)}
+                  </div>
+                ))}
+              </div>
+              <div className="space-y-3">
+                {previewSections.right.map((section) => (
+                  <div key={`preview-right-${section.sectionId}`}>
+                    <div className="text-[10px] font-black uppercase tracking-widest text-on-surface-variant">
+                      {section.title}
+                    </div>
+                    {renderSectionBody(section)}
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {previewSections.footer.length > 0 && (
+              <div className="mt-4 border-t border-surface-container-high pt-3 space-y-3">
+                {previewSections.footer.map((section) => (
+                  <div key={`preview-footer-${section.sectionId}`}>
+                    <div className="text-[10px] font-black uppercase tracking-widest text-on-surface-variant">
+                      {section.title}
+                    </div>
+                    {renderSectionBody(section)}
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
         </section>
       </div>
 

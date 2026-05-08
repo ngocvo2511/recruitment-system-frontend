@@ -302,7 +302,7 @@ export default function CandidateCVPage() {
                         onClick={() => router.push(`/candidate/cv/${cv.id}`)}
                         className="flex items-center gap-1 text-primary font-bold text-sm hover:underline"
                       >
-                        <Eye className="w-4 h-4" /> Xem
+                        <Eye className="w-4 h-4" /> Chi tiết
                       </button>
 
                       <button
@@ -316,7 +316,7 @@ export default function CandidateCVPage() {
                         ) : (
                           <CheckCircle className="w-4 h-4" />
                         )}
-                        Set Default
+                        Mặc định
                       </button>
 
                       <button
