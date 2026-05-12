@@ -22,6 +22,11 @@ export type PresignedUrlResponse = {
   downloadUrl: string;
 };
 
+export type ExtractedDataResponse = {
+  cvId: string;
+  parsedData?: string | null;
+};
+
 export type CvReviewResponse = {
   reviewId: string;
   cvId: string;
@@ -49,6 +54,7 @@ export type CvListItemResponse = {
   uploadedAt: string;
   isDefault?: boolean;
   default?: boolean;
+  aiStatus?: "PENDING" | "COMPLETED" | "FAILED";
 };
 
 type ApiErrorShape = {
@@ -118,6 +124,37 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
   return (payload as ApiResponse<T>).result;
 }
 
+async function requestRaw<T>(path: string, init?: RequestInit): Promise<T> {
+  const token = getAccessToken();
+  const headers = new Headers(init?.headers);
+
+  if (!headers.has("Content-Type")) {
+    headers.set("Content-Type", "application/json");
+  }
+
+  if (token) {
+    headers.set("Authorization", `Bearer ${token}`);
+  }
+
+  const response = await fetch(`${API_BASE_URL}${path}`, {
+    ...init,
+    headers,
+  });
+
+  const payload = (await response.json()) as T | ApiErrorShape;
+
+  if (!response.ok) {
+    const errorPayload = payload as ApiErrorShape;
+    throw new ApiError(
+      errorPayload.message ?? "Request failed",
+      response.status,
+      errorPayload.code,
+    );
+  }
+
+  return payload as T;
+}
+
 export async function uploadCv(file: File): Promise<CvResponse> {
   const form = new FormData();
   form.append("file", file);
@@ -130,6 +167,10 @@ export async function uploadCv(file: File): Promise<CvResponse> {
 
 export function getExtractionStatus(cvId: string): Promise<ExtractionStatusResponse> {
   return request<ExtractionStatusResponse>(`/api/cv/${cvId}/extraction-status`);
+}
+
+export function getExtractedData(cvId: string): Promise<ExtractedDataResponse> {
+  return requestRaw<ExtractedDataResponse>(`/api/cv/${cvId}/extracted-data`);
 }
 
 export function getPresignedUrl(cvId: string): Promise<PresignedUrlResponse> {

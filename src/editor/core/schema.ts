@@ -61,6 +61,24 @@ export type CvBlockBase = {
   slot?: string;
   order?: number;
   visible?: boolean;
+  locked?: boolean;
+};
+
+export type CvFieldType = "text" | "textarea" | "month" | "date" | "select" | "tags" | "email" | "phone" | "url";
+
+export type CvFieldDefinition = {
+  key: string;
+  label: string;
+  type: CvFieldType;
+  required?: boolean;
+  placeholder?: string;
+  options?: string[];
+  maxLength?: number;
+};
+
+export type CvSectionItem = {
+  id: string;
+  fields: Record<string, string>;
 };
 
 export type CvSectionBlock = CvBlockBase & {
@@ -68,7 +86,9 @@ export type CvSectionBlock = CvBlockBase & {
   props: {
     sectionType: string;
     title: string;
-    data: unknown;
+    repeatable?: boolean;
+    fields: CvFieldDefinition[];
+    items: CvSectionItem[];
   };
 };
 
@@ -99,16 +119,16 @@ export const DEFAULT_LAYOUT: CvLayout = {
     bottom: 32,
     left: 32,
   },
-  columns: 1,
+  columns: 2,
   columnGap: 16,
   slots: ["header", "left", "main", "right", "footer"],
 };
 
 export const DEFAULT_THEME: CvTheme = {
-  fontFamily: "Merriweather, serif",
-  headingFontFamily: "Montserrat, sans-serif",
-  baseFontSize: 11,
-  lineHeight: 1.5,
+  fontFamily: "Times New Roman, serif",
+  headingFontFamily: "Times New Roman, serif",
+  baseFontSize: 12,
+  lineHeight: 1.4,
   colors: {
     text: "#1F2937",
     muted: "#6B7280",

@@ -23,6 +23,7 @@ import {
   CandidateProfileResponse,
   getCandidateProfile,
   updateCandidateProfile,
+  updateOpenToWork,
 } from "@/lib/api/profile";
 
 type ToastItem = {
@@ -35,11 +36,13 @@ export default function CandidateProfilePage() {
   const [profile, setProfile] = useState<CandidateProfileResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [savingOpenToWork, setSavingOpenToWork] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [toasts, setToasts] = useState<ToastItem[]>([]);
   const [fullName, setFullName] = useState("");
   const [headline, setHeadline] = useState("");
   const [phoneNumber, setPhoneNumber] = useState("");
+  const [email, setEmail] = useState("");
   const [openToWork, setOpenToWork] = useState(false);
   const [skillInput, setSkillInput] = useState("");
   const [skills, setSkills] = useState<string[]>([]);
@@ -61,6 +64,7 @@ export default function CandidateProfilePage() {
       setFullName(data.fullName ?? "");
       setHeadline(data.headline ?? "");
       setPhoneNumber(data.phoneNumber ?? "");
+      setEmail(data.email ?? "");
       setOpenToWork(Boolean(data.openToWork));
       setSkills(data.skills ?? []);
     } catch (error) {
@@ -124,6 +128,33 @@ export default function CandidateProfilePage() {
       }
     } finally {
       setSaving(false);
+    }
+  };
+
+  const handleToggleOpenToWork = async () => {
+    if (savingOpenToWork) {
+      return;
+    }
+
+    const nextValue = !openToWork;
+    setOpenToWork(nextValue);
+    setSavingOpenToWork(true);
+    setErrorMessage(null);
+
+    try {
+      await updateOpenToWork({ openToWork: nextValue });
+      addToast("success", "Open to work updated.");
+    } catch (error) {
+      setOpenToWork((prev) => !prev);
+      if (error instanceof ApiError) {
+        setErrorMessage(error.message);
+        addToast("error", error.message);
+      } else {
+        setErrorMessage("Could not update open to work status.");
+        addToast("error", "Could not update open to work status.");
+      }
+    } finally {
+      setSavingOpenToWork(false);
     }
   };
 
@@ -291,13 +322,18 @@ export default function CandidateProfilePage() {
                   </div>
                 </div>
 
-              <div className="group">
-                <label className="block text-[10px] uppercase font-bold tracking-widest text-on-surface-variant mb-2 px-1">Email Address</label>
-                <div className="relative">
-                  <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-on-surface-variant" />
-                  <input className="w-full pl-12 pr-4 py-4 bg-surface-container-high/50 border-none rounded-xl focus:ring-2 focus:ring-primary/40 text-on-surface font-medium transition-all outline-none" type="email" defaultValue="a.sterling@example.com"/>
+                <div className="group">
+                  <label className="block text-[10px] uppercase font-bold tracking-widest text-on-surface-variant mb-2 px-1">Email Address</label>
+                  <div className="relative">
+                    <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-on-surface-variant" />
+                    <input
+                      className="w-full pl-12 pr-4 py-4 bg-surface-container-high/50 border-none rounded-xl focus:ring-2 focus:ring-primary/40 text-on-surface font-medium transition-all outline-none"
+                      type="email"
+                      value={email}
+                      readOnly
+                    />
+                  </div>
                 </div>
-              </div>
 
             </div>
 
@@ -312,7 +348,8 @@ export default function CandidateProfilePage() {
                   </div>
                   <button
                     type="button"
-                    onClick={() => setOpenToWork((prev) => !prev)}
+                    onClick={() => void handleToggleOpenToWork()}
+                    disabled={savingOpenToWork}
                     className={`w-full flex items-center justify-between px-4 py-3 rounded-xl border transition-colors ${
                       openToWork
                         ? "border-secondary/40 bg-secondary/10 text-secondary"
@@ -328,8 +365,8 @@ export default function CandidateProfilePage() {
                       }`}
                     >
                       <span
-                        className={`w-4 h-4 bg-white rounded-full absolute top-1 transition-transform ${
-                          openToWork ? "translate-x-6" : "translate-x-1"
+                        className={`w-4 h-4 bg-white rounded-full absolute top-1 left-1 transition-transform ${
+                          openToWork ? "translate-x-6" : "translate-x-0"
                         }`}
                       ></span>
                     </span>

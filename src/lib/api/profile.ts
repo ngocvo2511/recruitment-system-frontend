@@ -12,6 +12,7 @@ export type CandidateProfileResponse = {
   profilePictureUrl?: string | null;
   openToWork?: boolean | null;
   skills?: string[];
+  email?: string | null;
 };
 
 export type CandidateProfileUpdateRequest = {
@@ -20,6 +21,10 @@ export type CandidateProfileUpdateRequest = {
   phoneNumber?: string | null;
   openToWork?: boolean | null;
   confirmedSkills?: string[];
+};
+
+export type OpenToWorkUpdateRequest = {
+  openToWork: boolean;
 };
 
 type ApiErrorShape = {
@@ -94,6 +99,13 @@ export function getCandidateProfile(): Promise<CandidateProfileResponse> {
 
 export function updateCandidateProfile(payload: CandidateProfileUpdateRequest): Promise<string> {
   return request<string>("/api/profile/candidate", {
+    method: "PUT",
+    body: JSON.stringify(payload),
+  });
+}
+
+export function updateOpenToWork(payload: OpenToWorkUpdateRequest): Promise<string> {
+  return request<string>("/api/profile/candidate/open-to-work", {
     method: "PUT",
     body: JSON.stringify(payload),
   });

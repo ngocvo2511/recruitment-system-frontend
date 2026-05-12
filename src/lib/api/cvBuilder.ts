@@ -11,6 +11,7 @@ export type CvBuilderTemplateResponse = {
   description?: string | null;
   previewImageUrl?: string | null;
   displayOrder?: number | null;
+  layoutSchema?: string | null;
 };
 
 export type CvBuilderDraftResponse = {
@@ -48,6 +49,10 @@ export type UpdateCvBuilderDraftRequest = {
   title?: string;
   contentJson: string;
   version?: number;
+};
+
+export type UpdateDraftTemplateRequest = {
+  templateId: string;
 };
 
 export type AddCustomSectionRequest = {
@@ -177,5 +182,15 @@ export function reorderCvBuilderSections(
 export function deleteCvBuilderSection(draftId: string, sectionId: string): Promise<CvBuilderDraftResponse> {
   return request<CvBuilderDraftResponse>(`/api/cv-builder/drafts/${draftId}/sections/${sectionId}`, {
     method: "DELETE",
+  });
+}
+
+export function updateCvBuilderDraftTemplate(
+  draftId: string,
+  payload: UpdateDraftTemplateRequest,
+): Promise<CvBuilderDraftResponse> {
+  return request<CvBuilderDraftResponse>(`/api/cv-builder/drafts/${draftId}/template`, {
+    method: "PATCH",
+    body: JSON.stringify(payload),
   });
 }
