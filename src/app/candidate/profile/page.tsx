@@ -87,6 +87,23 @@ export default function CandidateProfilePage() {
   }, []);
 
   const skillChips = useMemo(() => skills.filter(Boolean), [skills]);
+  const hasChanges = useMemo(() => {
+    if (!profile) {
+      return false;
+    }
+
+    const initialSkills = (profile.skills ?? []).filter(Boolean);
+    const isSkillsChanged =
+      initialSkills.length !== skillChips.length ||
+      initialSkills.some((skill, index) => skill !== skillChips[index]);
+
+    return (
+      fullName !== (profile.fullName ?? "") ||
+      headline !== (profile.headline ?? "") ||
+      phoneNumber !== (profile.phoneNumber ?? "") ||
+      isSkillsChanged
+    );
+  }, [fullName, headline, phoneNumber, profile, skillChips]);
 
   const handleAddSkill = () => {
     const trimmed = skillInput.trim();
@@ -106,6 +123,10 @@ export default function CandidateProfilePage() {
   };
 
   const handleSave = async () => {
+    if (!hasChanges) {
+      return;
+    }
+
     setSaving(true);
     setErrorMessage(null);
     try {
@@ -326,12 +347,9 @@ export default function CandidateProfilePage() {
                   <label className="block text-[10px] uppercase font-bold tracking-widest text-on-surface-variant mb-2 px-1">Email Address</label>
                   <div className="relative">
                     <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-on-surface-variant" />
-                    <input
-                      className="w-full pl-12 pr-4 py-4 bg-surface-container-high/50 border-none rounded-xl focus:ring-2 focus:ring-primary/40 text-on-surface font-medium transition-all outline-none"
-                      type="email"
-                      value={email}
-                      readOnly
-                    />
+                    <div className="w-full pl-12 pr-4 py-4 bg-surface-container-high/50 border border-white/60 rounded-xl text-on-surface font-medium">
+                      {email || "--"}
+                    </div>
                   </div>
                 </div>
 
@@ -373,20 +391,16 @@ export default function CandidateProfilePage() {
                   </button>
                 </div>
 
-              <div className="mt-8 flex justify-end gap-4 h-min">
+              <div className="mt-8 flex justify-end h-min">
                 <button
-                  className="px-8 py-3 rounded-full font-bold text-sm text-on-surface-variant hover:bg-surface-container-high transition-all"
-                  type="button"
-                  onClick={() => void loadProfile()}
-                  disabled={saving}
-                >
-                  Discard
-                </button>
-                <button
-                  className="signature-gradient text-white px-10 py-3 rounded-full font-bold text-sm shadow-lg hover:scale-[1.02] active:scale-95 transition-transform flex items-center justify-center gap-2"
+                  className={`signature-gradient text-white px-10 py-3 rounded-full font-bold text-sm shadow-lg transition-transform flex items-center justify-center gap-2 ${
+                    saving || !hasChanges
+                      ? "opacity-50 cursor-not-allowed"
+                      : "hover:scale-[1.02] active:scale-95"
+                  }`}
                   type="button"
                   onClick={() => void handleSave()}
-                  disabled={saving}
+                  disabled={saving || !hasChanges}
                 >
                   {saving && <LoaderCircle className="w-4 h-4 animate-spin" />}
                   Save Changes

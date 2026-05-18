@@ -57,6 +57,13 @@ export type CvListItemResponse = {
   aiStatus?: "PENDING" | "COMPLETED" | "FAILED";
 };
 
+type RawCvListItemResponse = Omit<CvListItemResponse, "isDefault" | "default"> & {
+  is_default?: boolean | number | string;
+  isdefault?: boolean | number | string;
+  isDefault?: boolean | number | string;
+  default?: boolean | number | string;
+};
+
 type ApiErrorShape = {
   code?: number;
   message?: string;
@@ -194,7 +201,36 @@ export function getLatestCvReview(cvId: string): Promise<CvReviewResponse> {
 }
 
 export function getMyCvs(): Promise<CvListItemResponse[]> {
-  return request<CvListItemResponse[]>("/api/cv");
+  return request<RawCvListItemResponse[]>("/api/cv").then((list) =>
+    list.map((item) => {
+      const normalizedIsDefault = normalizeBooleanFlag(
+        item.isDefault ?? item.default ?? item.is_default ?? item.isdefault,
+      );
+
+      return {
+        ...item,
+        isDefault: normalizedIsDefault,
+        default: normalizedIsDefault,
+      };
+    }),
+  );
+}
+
+function normalizeBooleanFlag(value: boolean | number | string | undefined): boolean {
+  if (typeof value === "boolean") {
+    return value;
+  }
+
+  if (typeof value === "number") {
+    return value === 1;
+  }
+
+  if (typeof value === "string") {
+    const normalized = value.trim().toLowerCase();
+    return normalized === "true" || normalized === "1";
+  }
+
+  return false;
 }
 
 export function setDefaultCv(cvId: string): Promise<string> {

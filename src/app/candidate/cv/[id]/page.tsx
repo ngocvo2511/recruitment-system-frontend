@@ -247,7 +247,7 @@ export default function CandidateCvDetailPage() {
 
                   <div className="flex flex-wrap gap-2">
                     {cvItem.isDefault && (
-                      <span className="bg-secondary/10 text-secondary text-[10px] font-black px-3 py-1 rounded-full uppercase tracking-widest">
+                      <span className="bg-secondary/10 text-secondary text-[10px] font-black px-3 py-1 rounded-full tracking-widest">
                         Default
                       </span>
                     )}
@@ -267,7 +267,7 @@ export default function CandidateCvDetailPage() {
                     className="inline-flex items-center gap-2 signature-gradient text-white px-4 py-2 rounded-xl text-sm font-bold disabled:opacity-60"
                   >
                     {openingCv ? <LoaderCircle className="w-4 h-4 animate-spin" /> : <Eye className="w-4 h-4" />}
-                    Xem CV
+                    View CV
                   </button>
                 </div>
 
