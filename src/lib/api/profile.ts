@@ -97,8 +97,10 @@ export function getCandidateProfile(): Promise<CandidateProfileResponse> {
   return request<CandidateProfileResponse>("/api/profile/candidate");
 }
 
-export function updateCandidateProfile(payload: CandidateProfileUpdateRequest): Promise<string> {
-  return request<string>("/api/profile/candidate", {
+export function updateCandidateProfile(
+  payload: CandidateProfileUpdateRequest,
+): Promise<CandidateProfileResponse> {
+  return request<CandidateProfileResponse>("/api/profile/candidate", {
     method: "PUT",
     body: JSON.stringify(payload),
   });

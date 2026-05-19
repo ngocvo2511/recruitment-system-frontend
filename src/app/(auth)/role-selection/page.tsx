@@ -23,7 +23,7 @@ export default function RoleSelection() {
         <div className="grid md:grid-cols-2 gap-8 items-stretch">
           
           {/* Candidate Card */}
-          <Link href="/login?role=candidate" className="glass-card group relative p-10 rounded-xl border border-white/40 shadow-xl hover:shadow-2xl transition-all duration-500 hover:-translate-y-2 text-left flex flex-col justify-between">
+          <Link href="/register?role=candidate" className="glass-card group relative p-10 rounded-xl border border-white/40 shadow-xl hover:shadow-2xl transition-all duration-500 hover:-translate-y-2 text-left flex flex-col justify-between">
             <div className="space-y-6">
               <div className="w-16 h-16 rounded-2xl signature-gradient flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform duration-500">
                 <User className="text-on-primary w-8 h-8" />
@@ -54,7 +54,7 @@ export default function RoleSelection() {
           </Link>
 
           {/* Recruiter Card */}
-          <Link href="/login?role=recruiter" className="glass-card group relative p-10 rounded-xl border border-white/40 shadow-xl hover:shadow-2xl transition-all duration-500 hover:-translate-y-2 text-left flex flex-col justify-between overflow-hidden">
+          <Link href="/register?role=recruiter" className="glass-card group relative p-10 rounded-xl border border-white/40 shadow-xl hover:shadow-2xl transition-all duration-500 hover:-translate-y-2 text-left flex flex-col justify-between overflow-hidden">
             {/* Subtle Gradient Overlap */}
             <div className="absolute -top-12 -right-12 w-48 h-48 bg-secondary/5 rounded-full blur-3xl"></div>
             <div className="space-y-6 relative z-10">

@@ -1,151 +1,232 @@
 "use client";
 
-import { useSearchParams, useRouter } from "next/navigation";
 import { Suspense, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
-import { Mail, Lock, User, ArrowRight } from "lucide-react";
+import { ArrowRight, Briefcase, Loader2, Lock, Mail, Phone, User } from "lucide-react";
+import {
+  createRecruiterProfile,
+  registerCandidate,
+  registerRecruiter,
+  saveAccessToken,
+} from "@/lib/api/auth";
+import { updateCandidateProfile } from "@/lib/api/profile";
 
 function RegisterForm() {
   const router = useRouter();
-  const [name, setName] = useState("");
+  const searchParams = useSearchParams();
+  const initialRole = searchParams.get("role") === "recruiter" ? "recruiter" : "candidate";
+
+  const [role, setRole] = useState<"candidate" | "recruiter">(initialRole);
+  const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [gender, setGender] = useState("");
+  const [phone, setPhone] = useState("");
+  const [position, setPosition] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
-  
-  const handleRegister = (e: React.FormEvent) => {
-    e.preventDefault();
+  const [error, setError] = useState("");
+
+  const handleRegister = async (event: React.FormEvent) => {
+    event.preventDefault();
     setIsSubmitting(true);
-    // Mock simulation
-    setTimeout(() => {
+    setError("");
+
+    try {
+      if (role === "recruiter") {
+        const auth = await registerRecruiter(email, password);
+        saveAccessToken(auth.token);
+        localStorage.setItem("accountType", "recruiter");
+        if (auth.userId) localStorage.setItem("userId", auth.userId);
+        await createRecruiterProfile({
+          fullName,
+          gender,
+          phone,
+          position,
+        });
+        router.push("/company/select-action");
+        return;
+      }
+
+      const auth = await registerCandidate(email, password);
+      saveAccessToken(auth.token);
+      localStorage.setItem("accountType", "candidate");
+      if (auth.userId) localStorage.setItem("userId", auth.userId);
+      await updateCandidateProfile({ fullName });
       router.push("/candidate/jobs");
-    }, 1500);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Không thể đăng ký. Vui lòng thử lại.");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
     <div className="w-full max-w-lg z-10">
       <div className="glass-card rounded-[1.5rem] p-8 md:p-12 shadow-[0_40px_60px_rgba(0,0,0,0.04)] border border-white/40">
-        {/* Branding & Header */}
         <div className="text-center mb-10">
           <h1 className="text-3xl md:text-4xl font-extrabold tracking-[-0.02em] text-on-surface mb-3">
-            Join the Gallery
+            {role === "recruiter" ? "Tạo tài khoản nhà tuyển dụng" : "Tạo tài khoản ứng viên"}
           </h1>
           <p className="text-on-surface-variant">
-            Start your journey as a curated candidate.
+            {role === "recruiter"
+              ? "Tạo hồ sơ tuyển dụng trước khi kết nối công ty."
+              : "Bắt đầu hành trình tìm việc phù hợp với bạn."}
           </p>
         </div>
 
-        {/* Registration Form */}
         <form className="space-y-6" onSubmit={handleRegister}>
-          {/* Full Name */}
+          <div className="flex p-1 bg-surface-container-low rounded-full">
+            <button
+              onClick={() => setRole("candidate")}
+              className={`flex-1 py-2 px-4 text-xs font-bold tracking-widest uppercase rounded-full transition-all ${role === "candidate" ? "bg-white shadow-sm text-primary" : "text-on-surface-variant hover:text-on-surface"}`}
+              type="button"
+            >
+              Ứng viên
+            </button>
+            <button
+              onClick={() => setRole("recruiter")}
+              className={`flex-1 py-2 px-4 text-xs font-bold tracking-widest uppercase rounded-full transition-all ${role === "recruiter" ? "bg-white shadow-sm text-primary" : "text-on-surface-variant hover:text-on-surface"}`}
+              type="button"
+            >
+              Nhà tuyển dụng
+            </button>
+          </div>
+
+          {error && (
+            <div className="p-3 text-sm text-red-500 bg-red-100/10 border border-red-500/20 rounded-xl">
+              {error}
+            </div>
+          )}
+
           <div className="space-y-2">
             <label className="block text-sm font-bold uppercase tracking-[0.05em] text-on-surface-variant ml-1">
-              Full Name
+              Họ và tên
             </label>
             <div className="relative group">
-              <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-outline-variant group-focus-within:text-primary transition-colors">
-                <User className="w-5 h-5" />
-              </div>
-              <input 
+              <User className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-outline-variant group-focus-within:text-primary transition-colors" />
+              <input
                 required
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                className="block w-full pl-11 pr-4 py-4 bg-surface-container-high/50 rounded-xl border-none focus:ring-2 focus:ring-primary/40 focus:bg-white transition-all text-on-surface placeholder:text-outline-variant outline-none" 
-                placeholder="John Doe" 
+                value={fullName}
+                onChange={(event) => setFullName(event.target.value)}
+                className="block w-full pl-11 pr-4 py-4 bg-surface-container-high/50 rounded-xl border-none focus:ring-2 focus:ring-primary/40 focus:bg-white transition-all text-on-surface placeholder:text-outline-variant outline-none"
+                placeholder="Nguyễn Văn A"
                 type="text"
               />
             </div>
           </div>
 
-          {/* Email Address */}
           <div className="space-y-2">
             <label className="block text-sm font-bold uppercase tracking-[0.05em] text-on-surface-variant ml-1">
-              Email Address
+              Email
             </label>
             <div className="relative group">
-              <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-outline-variant group-focus-within:text-primary transition-colors">
-                <Mail className="w-5 h-5" />
-              </div>
-              <input 
+              <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-outline-variant group-focus-within:text-primary transition-colors" />
+              <input
                 required
                 value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className="block w-full pl-11 pr-4 py-4 bg-surface-container-high/50 rounded-xl border-none focus:ring-2 focus:ring-primary/40 focus:bg-white transition-all text-on-surface placeholder:text-outline-variant outline-none" 
-                placeholder="john@example.com" 
+                onChange={(event) => setEmail(event.target.value)}
+                className="block w-full pl-11 pr-4 py-4 bg-surface-container-high/50 rounded-xl border-none focus:ring-2 focus:ring-primary/40 focus:bg-white transition-all text-on-surface placeholder:text-outline-variant outline-none"
+                placeholder={role === "recruiter" ? "ten@congty.com" : "ban@example.com"}
                 type="email"
               />
             </div>
           </div>
 
-          {/* Password */}
           <div className="space-y-2">
             <label className="block text-sm font-bold uppercase tracking-[0.05em] text-on-surface-variant ml-1">
-              Password
+              Mật khẩu
             </label>
             <div className="relative group">
-              <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-outline-variant group-focus-within:text-primary transition-colors">
-                <Lock className="w-5 h-5" />
-              </div>
-              <input 
+              <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-outline-variant group-focus-within:text-primary transition-colors" />
+              <input
                 required
                 value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className="block w-full pl-11 pr-4 py-4 bg-surface-container-high/50 rounded-xl border-none focus:ring-2 focus:ring-primary/40 focus:bg-white transition-all text-on-surface placeholder:text-outline-variant outline-none" 
-                placeholder="••••••••" 
+                onChange={(event) => setPassword(event.target.value)}
+                className="block w-full pl-11 pr-4 py-4 bg-surface-container-high/50 rounded-xl border-none focus:ring-2 focus:ring-primary/40 focus:bg-white transition-all text-on-surface placeholder:text-outline-variant outline-none"
+                placeholder="Mật khẩu"
                 type="password"
               />
             </div>
           </div>
 
-          {/* Primary CTA */}
-          <button 
-            disabled={isSubmitting}
-            className="w-full signature-gradient text-white font-bold py-4 rounded-full shadow-[0_10px_30px_rgba(0,80,212,0.2)] hover:scale-[1.02] active:scale-95 transition-all duration-300 mt-4 group flex items-center justify-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed" 
-            type="submit"
-          >
-            Create Candidate Account
-            {!isSubmitting && <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />}
-          </button>
-
-          {/* Feedback Placeholder (Visible on pseudo-success) */}
-          {isSubmitting && (
-            <div className="flex items-center justify-center gap-3 py-4 px-6 bg-secondary-container/30 rounded-xl border border-secondary/10 animate-fade-in-up">
-              <div className="relative flex items-center justify-center">
-                <div className="animate-ping absolute inline-flex h-2 w-2 rounded-full bg-secondary opacity-75"></div>
-                <div className="relative inline-flex rounded-full h-2 w-2 bg-secondary"></div>
+          {role === "recruiter" && (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <label className="block text-sm font-bold uppercase tracking-[0.05em] text-on-surface-variant ml-1">
+                  Giới tính
+                </label>
+                <select
+                  required
+                  value={gender}
+                  onChange={(event) => setGender(event.target.value)}
+                  className="block w-full px-4 py-4 bg-surface-container-high/50 rounded-xl border-none focus:ring-2 focus:ring-primary/40 focus:bg-white transition-all text-on-surface outline-none"
+                >
+                  <option value="" disabled>
+                    Chọn
+                  </option>
+                  <option value="MALE">Nam</option>
+                  <option value="FEMALE">Nữ</option>
+                  <option value="OTHER">Khác</option>
+                </select>
               </div>
-              <p className="text-sm font-medium text-on-secondary-container">Redirecting to job discovery...</p>
+              <div className="space-y-2">
+                <label className="block text-sm font-bold uppercase tracking-[0.05em] text-on-surface-variant ml-1">
+                  Số điện thoại
+                </label>
+                <div className="relative group">
+                  <Phone className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-outline-variant group-focus-within:text-primary transition-colors" />
+                  <input
+                    required
+                    value={phone}
+                    onChange={(event) => setPhone(event.target.value)}
+                    className="block w-full pl-11 pr-4 py-4 bg-surface-container-high/50 rounded-xl border-none focus:ring-2 focus:ring-primary/40 focus:bg-white transition-all text-on-surface placeholder:text-outline-variant outline-none"
+                    placeholder="+84..."
+                    type="tel"
+                  />
+                </div>
+              </div>
+              <div className="md:col-span-2 space-y-2">
+                <label className="block text-sm font-bold uppercase tracking-[0.05em] text-on-surface-variant ml-1">
+                  Chức danh
+                </label>
+                <div className="relative group">
+                  <Briefcase className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-outline-variant group-focus-within:text-primary transition-colors" />
+                  <input
+                    value={position}
+                    onChange={(event) => setPosition(event.target.value)}
+                    className="block w-full pl-11 pr-4 py-4 bg-surface-container-high/50 rounded-xl border-none focus:ring-2 focus:ring-primary/40 focus:bg-white transition-all text-on-surface placeholder:text-outline-variant outline-none"
+                    placeholder="Chuyên viên tuyển dụng"
+                    type="text"
+                  />
+                </div>
+              </div>
             </div>
           )}
+
+          <button
+            disabled={isSubmitting}
+            className="w-full signature-gradient text-white font-bold py-4 rounded-full shadow-[0_10px_30px_rgba(0,80,212,0.2)] hover:scale-[1.02] active:scale-95 transition-all duration-300 mt-4 group flex items-center justify-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed"
+            type="submit"
+          >
+            {isSubmitting ? (
+              <Loader2 className="w-5 h-5 animate-spin" />
+            ) : (
+              <>
+                {role === "recruiter" ? "Tạo hồ sơ nhà tuyển dụng" : "Tạo tài khoản ứng viên"}
+                <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+              </>
+            )}
+          </button>
         </form>
 
-        {/* Secondary Action */}
         <div className="mt-8 text-center">
           <p className="text-on-surface-variant">
-            Already have an account? 
-            <Link className="text-primary font-bold hover:underline ml-1" href="/login">Log in</Link>
+            Đã có tài khoản?
+            <Link className="text-primary font-bold hover:underline ml-1" href="/login">
+              Đăng nhập
+            </Link>
           </p>
-        </div>
-      </div>
-      
-      {/* Social Proof / Footer Context */}
-      <div className="mt-12 flex flex-col md:flex-row items-center justify-between gap-6 px-4">
-        <div className="flex -space-x-3">
-          <div className="w-10 h-10 rounded-full border-2 border-white overflow-hidden bg-surface-container-high">
-            <img className="w-full h-full object-cover" src="https://i.pravatar.cc/150?img=1" />
-          </div>
-          <div className="w-10 h-10 rounded-full border-2 border-white overflow-hidden bg-surface-container-high">
-            <img className="w-full h-full object-cover" src="https://i.pravatar.cc/150?img=2" />
-          </div>
-          <div className="w-10 h-10 rounded-full border-2 border-white overflow-hidden bg-surface-container-high">
-            <img className="w-full h-full object-cover" src="https://i.pravatar.cc/150?img=3" />
-          </div>
-          <div className="w-10 h-10 rounded-full border-2 border-white bg-secondary flex items-center justify-center text-[10px] text-white font-bold">
-            +2k
-          </div>
-        </div>
-        <div className="text-center md:text-right">
-          <p className="text-xs uppercase tracking-widest text-outline-variant">Trusted by the world's most</p>
-          <p className="text-sm font-bold text-on-surface">Ambitious Creative Professionals</p>
         </div>
       </div>
     </div>

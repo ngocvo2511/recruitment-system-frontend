@@ -5,10 +5,46 @@ import { Suspense, useState } from "react";
 import Link from "next/link";
 import { Mail, Lock, Check, Eye, EyeOff, Loader2 } from "lucide-react";
 
+type JwtPayload = {
+  scope?: string;
+  user_id?: string;
+};
+
+type AccountType = "candidate" | "recruiter";
+
+const LOGIN_ERROR_MESSAGE = "Bạn đã nhập sai thông tin đăng nhập.";
+
+function decodeJwtPayload(token: string): JwtPayload | null {
+  try {
+    const payload = token.split(".")[1];
+    const normalized = payload.replace(/-/g, "+").replace(/_/g, "/");
+    const padded = normalized.padEnd(normalized.length + (4 - normalized.length % 4) % 4, "=");
+    return JSON.parse(window.atob(padded)) as JwtPayload;
+  } catch {
+    return null;
+  }
+}
+
+function getAccountType(token: string): AccountType | null {
+  const payload = decodeJwtPayload(token);
+  const scopes = payload?.scope?.split(" ") ?? [];
+
+  if (scopes.includes("ROLE_RECRUITER")) {
+    return "recruiter";
+  }
+
+  if (scopes.includes("ROLE_CANDIDATE")) {
+    return "candidate";
+  }
+
+  return null;
+}
+
 function LoginForm() {
   const searchParams = useSearchParams();
   const router = useRouter();
-  const initialRole = searchParams.get("role") || "candidate";
+  const requestedRole = searchParams.get("role");
+  const initialRole: AccountType = requestedRole === "recruiter" ? "recruiter" : "candidate";
   
   const [role, setRole] = useState(initialRole);
   const [email, setEmail] = useState("");
@@ -34,19 +70,35 @@ function LoginForm() {
       const data = await response.json();
 
       if (response.ok && data.code === 1000) {
-        const token = data.result.token;
+        const token = data.result.token as string;
+        const accountType = (data.result.accountType === "RECRUITER" ? "recruiter" : data.result.accountType === "CANDIDATE" ? "candidate" : getAccountType(token)) as AccountType | null;
+
+        if (accountType && accountType !== role) {
+          localStorage.removeItem("token");
+          localStorage.removeItem("accountType");
+          localStorage.removeItem("userId");
+          setError(LOGIN_ERROR_MESSAGE);
+          return;
+        }
+
         localStorage.setItem('token', token);
+        if (accountType) {
+          localStorage.setItem('accountType', accountType);
+        }
+        if (data.result.userId) {
+          localStorage.setItem("userId", data.result.userId);
+        }
         
-        if (role === 'employer') {
+        if (accountType === 'recruiter') {
           router.push("/recruiter/dashboard");
         } else {
           router.push("/candidate/jobs");
         }
       } else {
-        setError(data.message || 'Login failed. Please check your credentials.');
+        setError(LOGIN_ERROR_MESSAGE);
       }
-    } catch (err) {
-      setError('An error occurred while connecting to the server.');
+    } catch {
+      setError(LOGIN_ERROR_MESSAGE);
     } finally {
       setLoading(false);
     }
@@ -62,11 +114,11 @@ function LoginForm() {
         
         {/* Brand/Intro */}
         <div className="mb-10 text-center md:text-left animate-fade-in-up">
-          <h1 className="text-4xl font-extrabold tracking-[-0.03em] text-on-surface mb-3">
-            Welcome Back
+            <h1 className="text-4xl font-extrabold text-on-surface mb-3">
+            Chào mừng trở lại
           </h1>
           <p className="text-on-surface-variant leading-relaxed">
-            Continue your journey into curated excellence.
+            Đăng nhập để tiếp tục quản lý hồ sơ và tuyển dụng.
           </p>
         </div>
 
@@ -79,14 +131,14 @@ function LoginForm() {
               className={`flex-1 py-2 px-4 text-xs font-bold tracking-widest uppercase rounded-full transition-all ${role === 'candidate' ? 'bg-white shadow-sm text-primary' : 'text-on-surface-variant hover:text-on-surface'}`} 
               type="button"
             >
-              Candidate
+              Ứng viên
             </button>
             <button 
-              onClick={() => setRole('employer')}
-              className={`flex-1 py-2 px-4 text-xs font-bold tracking-widest uppercase rounded-full transition-all ${role === 'employer' ? 'bg-white shadow-sm text-primary' : 'text-on-surface-variant hover:text-on-surface'}`} 
+              onClick={() => setRole('recruiter')}
+              className={`flex-1 py-2 px-4 text-xs font-bold tracking-widest uppercase rounded-full transition-all ${role === 'recruiter' ? 'bg-white shadow-sm text-primary' : 'text-on-surface-variant hover:text-on-surface'}`} 
               type="button"
             >
-              Employer
+              Nhà tuyển dụng
             </button>
           </div>
 
@@ -99,7 +151,7 @@ function LoginForm() {
             )}
             <div className="group">
               <label className="block text-[10px] font-bold uppercase tracking-[0.1em] text-on-surface-variant mb-2 px-4">
-                Email Address
+                Email
               </label>
               <div className="relative">
                 <div className="absolute inset-y-0 left-4 flex items-center pointer-events-none text-outline-variant group-focus-within:text-primary transition-colors">
@@ -118,7 +170,7 @@ function LoginForm() {
 
             <div className="group">
               <label className="block text-[10px] font-bold uppercase tracking-[0.1em] text-on-surface-variant mb-2 px-4">
-                Password
+                Mật khẩu
               </label>
               <div className="relative">
                 <div className="absolute inset-y-0 left-4 flex items-center pointer-events-none text-outline-variant group-focus-within:text-primary transition-colors">
@@ -146,9 +198,9 @@ function LoginForm() {
                 <input className="peer appearance-none w-5 h-5 rounded-md border-2 border-outline-variant checked:bg-primary checked:border-primary transition-all cursor-pointer" type="checkbox"/>
                 <Check className="absolute w-3.5 h-3.5 text-white opacity-0 peer-checked:opacity-100 pointer-events-none" strokeWidth={3} />
               </div>
-              <span className="text-sm font-medium text-on-surface-variant group-hover:text-on-surface transition-colors">Remember me</span>
+              <span className="text-sm font-medium text-on-surface-variant group-hover:text-on-surface transition-colors">Ghi nhớ đăng nhập</span>
             </label>
-            <Link className="text-sm font-semibold text-primary hover:underline underline-offset-4 decoration-2" href="#">Forgot password?</Link>
+            <Link className="text-sm font-semibold text-primary hover:underline underline-offset-4 decoration-2" href="/forgot-password">Quên mật khẩu?</Link>
           </div>
 
           {/* CTA */}
@@ -156,7 +208,7 @@ function LoginForm() {
             <button disabled={loading} type="submit" className="w-full signature-gradient text-white font-bold py-4 rounded-full shadow-[0_12px_24px_-8px_rgba(0,80,212,0.4)] hover:scale-[1.02] hover:shadow-[0_20px_32px_-8px_rgba(0,80,212,0.5)] active:scale-95 transition-all duration-300 flex items-center justify-center gap-2 disabled:opacity-70 disabled:pointer-events-none">
               {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : (
                 <>
-                  Login
+                  Đăng nhập
                   <span className="material-symbols-outlined text-[20px]">arrow_forward</span>
                 </>
               )}
@@ -167,8 +219,8 @@ function LoginForm() {
         {/* Footer Link */}
         <div className="mt-8 text-center">
           <p className="text-on-surface-variant text-sm">
-            Don't have an account? 
-            <Link className="text-secondary font-bold hover:text-secondary-dim transition-colors ml-1" href={role === 'employer' ? "/company/select-action" : "/register"}>Create one</Link>
+            Chưa có tài khoản?
+            <Link className="text-secondary font-bold hover:text-secondary-dim transition-colors ml-1" href={role === 'recruiter' ? "/register?role=recruiter" : "/register?role=candidate"}>Đăng ký ngay</Link>
           </p>
         </div>
       </div>

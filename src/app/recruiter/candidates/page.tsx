@@ -72,13 +72,16 @@ export default function CandidateDatabasePage() {
             </thead>
             <tbody className="divide-y divide-outline-variant/10">
               
-              {MOCK_CANDIDATES.map((candidate) => (
+              {MOCK_CANDIDATES.map((candidate) => {
+                const matchScore = candidate.matchScore ?? 0;
+
+                return (
                 <tr key={candidate.id} className="bg-surface-container-lowest hover:bg-surface-container-low/50 transition-colors group">
                   <td className="px-6 py-5">
                     <div className="flex items-center gap-4">
                       <div className="relative">
                         <img className="w-12 h-12 rounded-xl object-cover ring-2 ring-transparent group-hover:ring-primary/20 transition-all" src={candidate.avatar} alt={candidate.name} />
-                        {candidate.matchScore > 90 && (
+                        {matchScore > 90 && (
                           <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-green-500 border-2 border-white rounded-full"></div>
                         )}
                       </div>
@@ -103,9 +106,9 @@ export default function CandidateDatabasePage() {
                   <td className="px-6 py-5">
                     <div className="flex items-center gap-3">
                       <div className="w-16 h-2 bg-surface-container-highest rounded-full overflow-hidden">
-                        <div className="h-full signature-gradient" style={{ width: `${candidate.matchScore}%` }}></div>
+                        <div className="h-full signature-gradient" style={{ width: `${matchScore}%` }}></div>
                       </div>
-                      <span className="text-sm font-extrabold text-secondary">{candidate.matchScore}%</span>
+                      <span className="text-sm font-extrabold text-secondary">{matchScore}%</span>
                     </div>
                   </td>
                   <td className="px-6 py-5 text-right">
@@ -114,7 +117,7 @@ export default function CandidateDatabasePage() {
                     </Link>
                   </td>
                 </tr>
-              ))}
+              )})}
               
             </tbody>
           </table>
