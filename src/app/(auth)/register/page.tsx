@@ -12,7 +12,7 @@ import {
   registerRecruiter,
   saveAccessToken,
 } from "@/lib/api/auth";
-import { updateCandidateProfile } from "@/lib/api/profile";
+import { createCandidateProfile } from "@/lib/api/profile";
 
 function RegisterForm() {
   const router = useRouter();
@@ -111,7 +111,7 @@ function RegisterForm() {
       saveAccessToken(auth.token);
       localStorage.setItem("accountType", "candidate");
       if (auth.userId) localStorage.setItem("userId", auth.userId);
-      await updateCandidateProfile({ fullName });
+      await createCandidateProfile({ fullName });
       router.push("/candidate/jobs");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Không thể đăng ký. Vui lòng thử lại.");

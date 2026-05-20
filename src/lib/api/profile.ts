@@ -23,6 +23,10 @@ export type CandidateProfileUpdateRequest = {
   confirmedSkills?: string[];
 };
 
+export type CandidateProfileCreateRequest = {
+  fullName: string;
+};
+
 export type OpenToWorkUpdateRequest = {
   openToWork: boolean;
 };
@@ -95,6 +99,15 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
 
 export function getCandidateProfile(): Promise<CandidateProfileResponse> {
   return request<CandidateProfileResponse>("/api/profile/candidate");
+}
+
+export function createCandidateProfile(
+  payload: CandidateProfileCreateRequest,
+): Promise<CandidateProfileResponse> {
+  return request<CandidateProfileResponse>("/api/profile/candidate", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
 }
 
 export function updateCandidateProfile(
