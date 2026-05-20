@@ -11,6 +11,11 @@ export type AuthResponse = {
   userId?: string;
 };
 
+export type OtpSentResponse = {
+  ttlSeconds: number;
+  resendCooldownSeconds: number;
+};
+
 export type RegisterRecruiterProfileRequest = {
   fullName: string;
   gender: string;
@@ -106,17 +111,31 @@ async function request<T>(
   return (payload as ApiResponse<T>).result;
 }
 
-export function registerCandidate(email: string, password: string): Promise<AuthResponse> {
-  return request<AuthResponse>("/api/auth/register/candidate", {
+export function requestRegisterOtp(email: string): Promise<OtpSentResponse> {
+  return request<OtpSentResponse>("/api/auth/register/request-otp", {
     method: "POST",
-    body: JSON.stringify({ email, password }),
+    body: JSON.stringify({ email }),
   }, { auth: false });
 }
 
-export function registerRecruiter(email: string, password: string): Promise<AuthResponse> {
+export function resendRegisterOtp(email: string): Promise<OtpSentResponse> {
+  return request<OtpSentResponse>("/api/auth/register/resend-otp", {
+    method: "POST",
+    body: JSON.stringify({ email }),
+  }, { auth: false });
+}
+
+export function registerCandidate(email: string, password: string, otpCode: string): Promise<AuthResponse> {
+  return request<AuthResponse>("/api/auth/register/candidate", {
+    method: "POST",
+    body: JSON.stringify({ email, password, otpCode }),
+  }, { auth: false });
+}
+
+export function registerRecruiter(email: string, password: string, otpCode: string): Promise<AuthResponse> {
   return request<AuthResponse>("/api/auth/register/recruiter", {
     method: "POST",
-    body: JSON.stringify({ email, password }),
+    body: JSON.stringify({ email, password, otpCode }),
   }, { auth: false });
 }
 

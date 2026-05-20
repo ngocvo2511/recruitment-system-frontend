@@ -1,11 +1,13 @@
 "use client";
 
-import { Suspense, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
-import { ArrowRight, Briefcase, Loader2, Lock, Mail, Phone, User } from "lucide-react";
+import { ArrowRight, Briefcase, KeyRound, Loader2, Lock, Mail, Phone, User } from "lucide-react";
 import {
   createRecruiterProfile,
+  requestRegisterOtp,
+  resendRegisterOtp,
   registerCandidate,
   registerRecruiter,
   saveAccessToken,
@@ -21,11 +23,68 @@ function RegisterForm() {
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [otpCode, setOtpCode] = useState("");
   const [gender, setGender] = useState("");
   const [phone, setPhone] = useState("");
   const [position, setPosition] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isSendingOtp, setIsSendingOtp] = useState(false);
+  const [otpSent, setOtpSent] = useState(false);
+  const [otpRemainingSeconds, setOtpRemainingSeconds] = useState<number | null>(null);
+  const [resendRemainingSeconds, setResendRemainingSeconds] = useState<number | null>(null);
   const [error, setError] = useState("");
+
+  useEffect(() => {
+    if (otpRemainingSeconds === null || otpRemainingSeconds <= 0) {
+      return;
+    }
+
+    const timer = setTimeout(() => {
+      setOtpRemainingSeconds((prev) => (prev && prev > 0 ? prev - 1 : 0));
+    }, 1000);
+
+    return () => clearTimeout(timer);
+  }, [otpRemainingSeconds]);
+
+  useEffect(() => {
+    if (resendRemainingSeconds === null || resendRemainingSeconds <= 0) {
+      return;
+    }
+
+    const timer = setTimeout(() => {
+      setResendRemainingSeconds((prev) => (prev && prev > 0 ? prev - 1 : 0));
+    }, 1000);
+
+    return () => clearTimeout(timer);
+  }, [resendRemainingSeconds]);
+
+  const formatCountdown = (seconds: number) => {
+    const minutes = Math.floor(seconds / 60);
+    const remainingSeconds = seconds % 60;
+    return `${minutes}:${remainingSeconds.toString().padStart(2, "0")}`;
+  };
+
+  const handleSendOtp = async () => {
+    if (!email.trim()) {
+      setError("Vui lòng nhập email để nhận OTP.");
+      return;
+    }
+
+    setIsSendingOtp(true);
+    setError("");
+
+    try {
+      const requestOtp = otpSent ? resendRegisterOtp : requestRegisterOtp;
+      const result = await requestOtp(email.trim());
+      setOtpSent(true);
+      setOtpRemainingSeconds(result.ttlSeconds);
+      setResendRemainingSeconds(result.resendCooldownSeconds);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Không thể gửi OTP. Vui lòng thử lại.");
+    } finally {
+      setIsSendingOtp(false);
+    }
+  };
 
   const handleRegister = async (event: React.FormEvent) => {
     event.preventDefault();
@@ -34,7 +93,7 @@ function RegisterForm() {
 
     try {
       if (role === "recruiter") {
-        const auth = await registerRecruiter(email, password);
+        const auth = await registerRecruiter(email, password, otpCode);
         saveAccessToken(auth.token);
         localStorage.setItem("accountType", "recruiter");
         if (auth.userId) localStorage.setItem("userId", auth.userId);
@@ -48,7 +107,7 @@ function RegisterForm() {
         return;
       }
 
-      const auth = await registerCandidate(email, password);
+      const auth = await registerCandidate(email, password, otpCode);
       saveAccessToken(auth.token);
       localStorage.setItem("accountType", "candidate");
       if (auth.userId) localStorage.setItem("userId", auth.userId);
@@ -60,6 +119,49 @@ function RegisterForm() {
       setIsSubmitting(false);
     }
   };
+
+  const otpSection = (
+    <div className="space-y-2">
+      <label className="block text-sm font-bold uppercase tracking-[0.05em] text-on-surface-variant ml-1">
+        OTP
+      </label>
+      <div className="flex flex-col gap-3 sm:flex-row">
+        <div className="relative group flex-1">
+          <KeyRound className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-outline-variant group-focus-within:text-primary transition-colors" />
+          <input
+            required
+            value={otpCode}
+            onChange={(event) => setOtpCode(event.target.value)}
+            className="block w-full pl-11 pr-4 py-4 bg-surface-container-high/50 rounded-xl border-none focus:ring-2 focus:ring-primary/40 focus:bg-white transition-all text-on-surface placeholder:text-outline-variant outline-none"
+            placeholder="Nhập OTP"
+            type="text"
+            inputMode="numeric"
+          />
+        </div>
+        <button
+          type="button"
+          onClick={handleSendOtp}
+          disabled={isSendingOtp || !email.trim() || (resendRemainingSeconds !== null && resendRemainingSeconds > 0)}
+          className="px-5 py-4 rounded-xl border border-outline-variant/30 text-sm font-bold uppercase tracking-[0.08em] text-primary bg-white/70 hover:bg-white transition-all disabled:opacity-70 disabled:cursor-not-allowed"
+        >
+          {isSendingOtp ? <Loader2 className="w-5 h-5 animate-spin" /> : (otpSent ? "Gửi lại" : "Gửi OTP")}
+        </button>
+      </div>
+      {otpSent && (
+        <p className="text-xs text-on-surface-variant">OTP đã được gửi tới email của bạn.</p>
+      )}
+      {otpRemainingSeconds !== null && (
+        <p className="text-xs text-on-surface-variant">
+          Thời gian sử dụng OTP: {formatCountdown(Math.max(otpRemainingSeconds, 0))}
+        </p>
+      )}
+      {resendRemainingSeconds !== null && (
+        <p className="text-xs text-on-surface-variant">
+          Thời gian gửi lại: {formatCountdown(Math.max(resendRemainingSeconds, 0))}
+        </p>
+      )}
+    </div>
+  );
 
   return (
     <div className="w-full max-w-lg z-10">
@@ -125,7 +227,13 @@ function RegisterForm() {
               <input
                 required
                 value={email}
-                onChange={(event) => setEmail(event.target.value)}
+                onChange={(event) => {
+                  setEmail(event.target.value);
+                  setOtpSent(false);
+                  setOtpCode("");
+                  setOtpRemainingSeconds(null);
+                  setResendRemainingSeconds(null);
+                }}
                 className="block w-full pl-11 pr-4 py-4 bg-surface-container-high/50 rounded-xl border-none focus:ring-2 focus:ring-primary/40 focus:bg-white transition-all text-on-surface placeholder:text-outline-variant outline-none"
                 placeholder={role === "recruiter" ? "ten@congty.com" : "ban@example.com"}
                 type="email"
@@ -149,6 +257,8 @@ function RegisterForm() {
               />
             </div>
           </div>
+
+          {role === "candidate" && otpSection}
 
           {role === "recruiter" && (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -203,6 +313,8 @@ function RegisterForm() {
               </div>
             </div>
           )}
+
+          {role === "recruiter" && otpSection}
 
           <button
             disabled={isSubmitting}
