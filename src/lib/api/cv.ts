@@ -190,14 +190,16 @@ export function retryExtraction(cvId: string): Promise<string> {
   });
 }
 
-export function createCvReview(cvId: string): Promise<CvReviewResponse> {
+export function createCvReview(cvId: string, jobId?: string): Promise<CvReviewResponse> {
   return request<CvReviewResponse>(`/api/cv/${cvId}/review`, {
     method: "POST",
+    body: JSON.stringify(jobId ? { jobId } : {}),
   });
 }
 
-export function getLatestCvReview(cvId: string): Promise<CvReviewResponse> {
-  return request<CvReviewResponse>(`/api/cv/${cvId}/review`);
+export function getLatestCvReview(cvId: string, jobId?: string): Promise<CvReviewResponse> {
+  const params = jobId ? `?jobId=${jobId}` : "";
+  return request<CvReviewResponse>(`/api/cv/${cvId}/review${params}`);
 }
 
 export function getMyCvs(): Promise<CvListItemResponse[]> {
