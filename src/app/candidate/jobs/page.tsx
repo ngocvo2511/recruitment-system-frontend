@@ -1,8 +1,78 @@
-import { MOCK_JOBS } from "@/lib/mockData";
+"use client";
+
+import { useEffect, useMemo, useState } from "react";
 import { Search, MapPin, Clock, Building2, ChevronRight, Sparkles } from "lucide-react";
 import Link from "next/link";
+import {
+  ApiError,
+  getJobRecommendations,
+  type JobRecommendationResponse,
+  type JobResponse,
+} from "@/lib/api/jobs";
+
+function formatDate(value?: string | null): string {
+  if (!value) {
+    return "--";
+  }
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) {
+    return "--";
+  }
+  return date.toLocaleDateString();
+}
+
+function formatSalary(job: JobResponse): string {
+  if (job.salaryNegotiable) {
+    return "Thoả thuận";
+  }
+  const min = job.minSalary ?? null;
+  const max = job.maxSalary ?? null;
+  const currency = job.currency ? ` ${job.currency}` : "";
+  if (min != null && max != null) {
+    return `${min} - ${max}${currency}`;
+  }
+  if (min != null) {
+    return `From ${min}${currency}`;
+  }
+  if (max != null) {
+    return `Up to ${max}${currency}`;
+  }
+  return "--";
+}
 
 export default function CandidateJobsPage() {
+  const [jobs, setJobs] = useState<JobRecommendationResponse[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
+  useEffect(() => {
+    let active = true;
+    setLoading(true);
+    getJobRecommendations(12)
+      .then((data) => {
+        if (!active) return;
+        setJobs(data);
+        setErrorMessage(null);
+      })
+      .catch((error: unknown) => {
+        if (!active) return;
+        const message = error instanceof ApiError ? error.message : "Could not load jobs.";
+        setErrorMessage(message);
+        setJobs([]);
+      })
+      .finally(() => {
+        if (!active) return;
+        setLoading(false);
+      });
+
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  const totalJobs = jobs.length;
+  const jobList = useMemo(() => jobs, [jobs]);
+
   return (
     <div className="w-full">
       {/* Hero Section */}
@@ -83,7 +153,7 @@ export default function CandidateJobsPage() {
         {/* Job List */}
         <div className="lg:col-span-9">
           <div className="flex items-center justify-between mb-8">
-            <span className="font-bold text-on-surface-variant">Hiển thị {MOCK_JOBS.length} kết quả</span>
+            <span className="font-bold text-on-surface-variant">Hiển thị {totalJobs} kết quả</span>
             <div className="flex items-center gap-2">
               <span className="text-sm text-on-surface-variant">Sắp xếp:</span>
               <button className="flex items-center gap-1 font-bold text-on-surface">Mới nhất <ChevronRight className="rotate-90 w-4 h-4"/></button>
@@ -91,25 +161,38 @@ export default function CandidateJobsPage() {
           </div>
           
           <div className="space-y-4">
-            {MOCK_JOBS.map((job, idx) => (
+            {loading && (
+              <div className="text-on-surface-variant">Đang tải việc làm...</div>
+            )}
+            {!loading && errorMessage && (
+              <div className="text-error">{errorMessage}</div>
+            )}
+            {!loading && !errorMessage && jobList.length === 0 && (
+              <div className="text-on-surface-variant">Chưa có việc làm phù hợp.</div>
+            )}
+            {!loading && !errorMessage && jobList.map(({ job, matchScore }, idx) => (
               <div key={job.id} className="group bg-surface-container-lowest p-6 rounded-3xl border border-transparent hover:border-primary/10 hover:shadow-[0_8px_32px_0_rgba(0,80,212,0.05)] transition-all flex flex-col md:flex-row gap-6 items-start md:items-center">
                 <div className="w-14 h-14 bg-surface rounded-2xl flex items-center justify-center p-3 flex-shrink-0">
-                  {/* Mock logic for logo */}
                   <div className="w-full h-full bg-gradient-to-br from-indigo-500 to-purple-500 rounded-lg"></div>
                 </div>
                 <div className="flex-grow">
-                  <div className="flex items-center gap-3 mb-1">
+                  <div className="flex flex-wrap items-center gap-3 mb-1">
                     <h3 className="text-xl font-bold group-hover:text-primary transition-colors text-on-surface">{job.title}</h3>
                     {idx === 0 && <span className="px-2 py-0.5 bg-green-100 text-green-700 text-[10px] font-bold uppercase rounded">Urgent</span>}
+                    {matchScore != null && (
+                      <span className="px-2 py-0.5 bg-primary/10 text-primary text-[10px] font-bold uppercase rounded">
+                        {matchScore}% Match
+                      </span>
+                    )}
                   </div>
                   <div className="flex flex-wrap gap-x-6 gap-y-2 text-sm text-on-surface-variant font-medium mt-2">
-                    <span className="flex items-center gap-1"><Building2 className="w-4 h-4"/> {job.companyId === 'comp1' ? 'OrbitX Systems' : 'Tech Startup'}</span>
-                    <span className="flex items-center gap-1"><MapPin className="w-4 h-4"/> {job.location}</span>
-                    <span className="flex items-center gap-1"><Clock className="w-4 h-4"/> {job.postedDate}</span>
+                    <span className="flex items-center gap-1"><Building2 className="w-4 h-4"/> {job.companyName ?? "Company"}</span>
+                    <span className="flex items-center gap-1"><MapPin className="w-4 h-4"/> {job.location ?? "--"}</span>
+                    <span className="flex items-center gap-1"><Clock className="w-4 h-4"/> {formatDate(job.publishedAt ?? job.createdAt)}</span>
                   </div>
                 </div>
                 <div className="flex md:flex-col items-end gap-2 shrink-0 w-full md:w-auto">
-                  <span className="text-lg font-black text-on-surface text-primary">{job.salaryRange}</span>
+                  <span className="text-lg font-black text-on-surface text-primary">{formatSalary(job)}</span>
                   <Link href={`/candidate/jobs/${job.id}`} className="px-6 py-2 bg-surface text-on-surface-variant font-bold rounded-xl hover:bg-primary hover:text-white transition-all w-full md:w-auto text-center">
                     Ứng tuyển
                   </Link>

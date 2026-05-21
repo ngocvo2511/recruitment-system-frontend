@@ -53,6 +53,22 @@ export type JobResponse = JobPayload & {
   recruiterId?: string | null;
 };
 
+export type JobMatchScore = {
+  jobId: string;
+  cvId: string;
+  fitScore?: number | null;
+  skillsScore?: number | null;
+  descriptionScore?: number | null;
+  requirementsScore?: number | null;
+  model?: string | null;
+  dimensions?: number | null;
+};
+
+export type JobRecommendationResponse = {
+  job: JobResponse;
+  matchScore?: number | null;
+};
+
 type ApiErrorShape = {
   code?: number;
   message?: string;
@@ -121,6 +137,24 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
 
 export function getJobs(): Promise<JobResponse[]> {
   return request<JobResponse[]>("/api/jobs");
+}
+
+export function getJobById(jobId: string): Promise<JobResponse> {
+  return request<JobResponse>(`/api/jobs/${jobId}`);
+}
+
+export function getJobMatch(jobId: string, cvId?: string): Promise<JobMatchScore> {
+  const params = cvId ? `?cvId=${cvId}` : "";
+  return request<JobMatchScore>(`/api/jobs/${jobId}/match${params}`);
+}
+
+export function getJobRecommendations(topK = 10, cvId?: string): Promise<JobRecommendationResponse[]> {
+  const params = new URLSearchParams();
+  params.set("topK", String(topK));
+  if (cvId) {
+    params.set("cvId", cvId);
+  }
+  return request<JobRecommendationResponse[]>(`/api/jobs/recommendations?${params.toString()}`);
 }
 
 export function createJob(payload: JobPayload): Promise<JobResponse> {
