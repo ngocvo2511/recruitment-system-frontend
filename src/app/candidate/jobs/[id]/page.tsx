@@ -19,6 +19,12 @@ import {
   type CvListItemResponse,
   type CvReviewResponse,
 } from "@/lib/api/cv";
+import {
+  ApiError as ApplicationApiError,
+  applyToJob,
+  getMyApplications,
+  type ApplicationResponse,
+} from "@/lib/api/applications";
 
 function formatDate(value?: string | null): string {
   if (!value) {
@@ -102,16 +108,22 @@ export default function JobDetailPage() {
   const [creatingReview, setCreatingReview] = useState(false);
   const [reviewError, setReviewError] = useState<string | null>(null);
   const [reviewInfo, setReviewInfo] = useState<string | null>(null);
+  const [myApplications, setMyApplications] = useState<ApplicationResponse[]>([]);
+  const [showApplyForm, setShowApplyForm] = useState(false);
+  const [coverLetter, setCoverLetter] = useState("");
+  const [applying, setApplying] = useState(false);
+  const [applyError, setApplyError] = useState<string | null>(null);
+  const [applySuccess, setApplySuccess] = useState<string | null>(null);
 
   useEffect(() => {
     if (!jobId) {
       return;
     }
     let active = true;
-    setLoading(true);
-    setErrorMessage(null);
 
     const load = async () => {
+      setLoading(true);
+      setErrorMessage(null);
       try {
         const jobData = await getJobById(jobId);
         if (!active) return;
@@ -143,8 +155,9 @@ export default function JobDetailPage() {
     };
   }, [jobId]);
 
+  const jobRequirementSections = job?.requirementSections;
   const requirementSections = useMemo(() => {
-    if (!job?.requirementSections) {
+    if (!jobRequirementSections) {
       return [];
     }
     const fallbackTitles: Record<string, string> = {
@@ -152,7 +165,7 @@ export default function JobDetailPage() {
       PREFERRED: "Yêu cầu ưu tiên",
       OTHER: "Yêu cầu khác",
     };
-    return job.requirementSections
+    return jobRequirementSections
       .map((section) => {
         const items = (section.items ?? [])
           .map((item) => item.content?.trim())
@@ -165,7 +178,7 @@ export default function JobDetailPage() {
         };
       })
       .filter((section) => section.items.length > 0);
-  }, [job?.requirementSections]);
+  }, [jobRequirementSections]);
 
   const reviewStrengths = useMemo(() => parseJsonList(review?.strengths), [review?.strengths]);
   const reviewWeaknesses = useMemo(() => parseJsonList(review?.weaknesses), [review?.weaknesses]);
@@ -185,6 +198,11 @@ export default function JobDetailPage() {
         { title: "Kế hoạch hành động", items: reviewActionPlan },
       ].filter((section) => section.items.length > 0),
     [reviewActionPlan, reviewImprovements, reviewMatched, reviewMissing, reviewStrengths, reviewWeaknesses],
+  );
+
+  const currentApplication = useMemo(
+    () => myApplications.find((application) => application.jobId === jobId && application.status !== "WITHDRAWN") ?? null,
+    [jobId, myApplications],
   );
 
   const loadReview = async (cvId: string, activeJobId: string) => {
@@ -281,18 +299,72 @@ export default function JobDetailPage() {
   }, []);
 
   useEffect(() => {
+    let active = true;
+    const loadApplications = async () => {
+      try {
+        const list = await getMyApplications();
+        if (active) {
+          setMyApplications(list);
+        }
+      } catch {
+        if (active) {
+          setMyApplications([]);
+        }
+      }
+    };
+    void loadApplications();
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  useEffect(() => {
     if (!selectedCvId || !jobId) {
+      queueMicrotask(() => {
+        setReview(null);
+        setReviewNotFound(false);
+        setReviewInfo(null);
+      });
+      return;
+    }
+    queueMicrotask(() => {
       setReview(null);
       setReviewNotFound(false);
       setReviewInfo(null);
+    });
+    queueMicrotask(() => {
+      void loadReview(selectedCvId, jobId);
+    });
+  }, [selectedCvId, jobId]);
+
+  const handleApply = async () => {
+    if (!jobId) {
+      setApplyError("Không tìm thấy tin tuyển dụng.");
       return;
     }
-    setReview(null);
-    setReviewNotFound(false);
-    setReviewInfo(null);
-    void loadReview(selectedCvId, jobId);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedCvId, jobId]);
+    if (!selectedCvId) {
+      setApplyError("Vui lòng chọn CV để ứng tuyển.");
+      return;
+    }
+
+    setApplying(true);
+    setApplyError(null);
+    setApplySuccess(null);
+    try {
+      const application = await applyToJob({
+        jobId,
+        cvId: selectedCvId,
+        coverLetter,
+      });
+      setMyApplications((current) => [application, ...current]);
+      setApplySuccess("Ứng tuyển thành công. Nhà tuyển dụng sẽ xem hồ sơ của bạn.");
+      setShowApplyForm(false);
+    } catch (error) {
+      setApplyError(error instanceof ApplicationApiError ? error.message : "Không thể gửi đơn ứng tuyển.");
+    } finally {
+      setApplying(false);
+    }
+  };
 
   if (loading && !job) {
     return (
@@ -338,11 +410,91 @@ export default function JobDetailPage() {
           </div>
           <div className="flex md:flex-col items-center md:items-end gap-3 w-full md:w-auto">
             <div className="text-2xl font-black text-primary">{formatSalary(job)}</div>
-            <button className="signature-gradient text-white px-8 py-3 rounded-full font-bold shadow-lg hover:scale-105 active:scale-95 transition-all w-full md:w-auto">
-              Ứng tuyển ngay
+            <button
+              type="button"
+              onClick={() => {
+                setApplyError(null);
+                setApplySuccess(null);
+                setShowApplyForm((visible) => !visible);
+              }}
+              disabled={Boolean(currentApplication)}
+              className="signature-gradient text-white px-8 py-3 rounded-full font-bold shadow-lg hover:scale-105 active:scale-95 transition-all w-full md:w-auto disabled:opacity-60 disabled:hover:scale-100"
+            >
+              {currentApplication ? "Đã ứng tuyển" : "Ứng tuyển ngay"}
             </button>
           </div>
         </div>
+
+        {(showApplyForm || currentApplication || applySuccess) && (
+          <div className="mb-10 rounded-2xl border border-primary/20 bg-primary-container/10 p-6">
+            {currentApplication ? (
+              <div className="space-y-2">
+                <h2 className="text-lg font-bold text-on-surface">Bạn đã ứng tuyển công việc này</h2>
+                <p className="text-sm text-on-surface-variant">
+                  Trạng thái hiện tại: <span className="font-bold text-primary">{currentApplication.status}</span>
+                </p>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                <div>
+                  <h2 className="text-lg font-bold text-on-surface">Nộp đơn ứng tuyển</h2>
+                  <p className="text-sm text-on-surface-variant">Chọn CV phù hợp và thêm lời nhắn ngắn nếu cần.</p>
+                </div>
+                <div className="grid gap-4 md:grid-cols-2">
+                  <label className="space-y-2 text-sm font-semibold text-on-surface">
+                    CV ứng tuyển
+                    <select
+                      value={selectedCvId ?? ""}
+                      onChange={(event) => setSelectedCvId(event.target.value || null)}
+                      disabled={loadingCvs || applying}
+                      className="w-full rounded-xl border border-outline-variant/20 bg-surface-container-high/60 px-4 py-3 text-sm text-on-surface outline-none focus:ring-2 focus:ring-primary/30"
+                    >
+                      {!selectedCvId && <option value="">Chọn CV</option>}
+                      {cvs.map((cv) => (
+                        <option key={cv.id} value={cv.id}>
+                          {cv.cvName}
+                          {cv.isDefault ? " (Mặc định)" : ""}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                  <label className="space-y-2 text-sm font-semibold text-on-surface md:col-span-2">
+                    Lời nhắn cho nhà tuyển dụng
+                    <textarea
+                      value={coverLetter}
+                      onChange={(event) => setCoverLetter(event.target.value)}
+                      disabled={applying}
+                      rows={4}
+                      className="w-full resize-none rounded-xl border border-outline-variant/20 bg-surface-container-high/60 px-4 py-3 text-sm text-on-surface outline-none focus:ring-2 focus:ring-primary/30"
+                      placeholder="Viết ngắn gọn lý do bạn phù hợp với vị trí này..."
+                    />
+                  </label>
+                </div>
+                {applyError && <p className="text-sm font-medium text-error">{applyError}</p>}
+                {cvError && <p className="text-sm font-medium text-error">{cvError}</p>}
+                {applySuccess && <p className="text-sm font-medium text-secondary">{applySuccess}</p>}
+                <div className="flex flex-wrap gap-3">
+                  <button
+                    type="button"
+                    onClick={handleApply}
+                    disabled={applying || !selectedCvId}
+                    className="rounded-full bg-primary px-6 py-3 text-sm font-bold text-white shadow-lg transition hover:shadow-xl disabled:opacity-60"
+                  >
+                    {applying ? "Đang gửi..." : "Gửi đơn ứng tuyển"}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setShowApplyForm(false)}
+                    disabled={applying}
+                    className="rounded-full bg-surface-container-high px-6 py-3 text-sm font-bold text-on-surface transition hover:bg-surface-container-highest"
+                  >
+                    Hủy
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
 
         {/* AI Insight Snippet */}
           <div className="bg-primary-container/20 border border-primary/20 rounded-2xl p-6 mb-10 flex gap-4">

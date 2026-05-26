@@ -1,164 +1,247 @@
+"use client";
+
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { Download, UserPlus, Search, SlidersHorizontal, ChevronLeft, ChevronRight } from "lucide-react";
-import { MOCK_CANDIDATES } from "@/lib/mockData";
+import { AlertCircle, BriefcaseBusiness, Download, Search, SlidersHorizontal } from "lucide-react";
+import { ApiError, getRecruiterApplications, type ApplicationResponse } from "@/lib/api/applications";
+
+type CandidateRow = {
+  candidateId: string;
+  candidateName?: string | null;
+  candidateEmail?: string | null;
+  candidatePhone?: string | null;
+  latestApplication: ApplicationResponse;
+  applications: ApplicationResponse[];
+};
+
+function formatDate(value?: string | null): string {
+  if (!value) return "--";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "--";
+  return date.toLocaleDateString("vi-VN");
+}
+
+function buildCandidateRows(applications: ApplicationResponse[]): CandidateRow[] {
+  const map = new Map<string, CandidateRow>();
+
+  applications
+    .filter((application) => application.status !== "WITHDRAWN")
+    .forEach((application) => {
+      const current = map.get(application.candidateId);
+      if (!current) {
+        map.set(application.candidateId, {
+          candidateId: application.candidateId,
+          candidateName: application.candidateName,
+          candidateEmail: application.candidateEmail,
+          candidatePhone: application.candidatePhone,
+          latestApplication: application,
+          applications: [application],
+        });
+        return;
+      }
+
+      current.applications.push(application);
+      const latest = new Date(current.latestApplication.appliedAt ?? 0).getTime();
+      const next = new Date(application.appliedAt ?? 0).getTime();
+      if (next > latest) {
+        current.latestApplication = application;
+      }
+    });
+
+  return Array.from(map.values()).sort((a, b) => {
+    const aTime = new Date(a.latestApplication.appliedAt ?? 0).getTime();
+    const bTime = new Date(b.latestApplication.appliedAt ?? 0).getTime();
+    return bTime - aTime;
+  });
+}
 
 export default function CandidateDatabasePage() {
+  const [applications, setApplications] = useState<ApplicationResponse[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [keyword, setKeyword] = useState("");
+
+  useEffect(() => {
+    let active = true;
+    const load = async () => {
+      setLoading(true);
+      setErrorMessage(null);
+      try {
+        const data = await getRecruiterApplications();
+        if (active) setApplications(data);
+      } catch (error) {
+        if (!active) return;
+        setErrorMessage(error instanceof ApiError ? error.message : "Không thể tải danh sách ứng viên.");
+      } finally {
+        if (active) setLoading(false);
+      }
+    };
+    void load();
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  const candidates = useMemo(() => buildCandidateRows(applications), [applications]);
+  const filteredCandidates = useMemo(() => {
+    const query = keyword.trim().toLowerCase();
+    if (!query) return candidates;
+    return candidates.filter((candidate) => {
+      const haystack = [
+        candidate.candidateName,
+        candidate.candidateEmail,
+        candidate.candidatePhone,
+        candidate.latestApplication.jobTitle,
+        candidate.latestApplication.companyName,
+      ]
+        .filter(Boolean)
+        .join(" ")
+        .toLowerCase();
+      return haystack.includes(query);
+    });
+  }, [candidates, keyword]);
+
   return (
     <div className="max-w-7xl mx-auto animate-fade-in-up">
-      {/* Page Header */}
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-10">
         <div>
-          <h1 className="text-4xl font-extrabold tracking-tight text-on-surface mb-2">Talent Pool</h1>
-          <p className="text-on-surface-variant max-w-xl">Browse and filter top-tier candidates curated for your organization's unique requirements.</p>
+          <h1 className="text-4xl font-extrabold tracking-tight text-on-surface mb-2">Ứng viên đã nộp</h1>
+          <p className="text-on-surface-variant max-w-xl">
+            Danh sách candidate được tổng hợp từ các đơn ứng tuyển vào công ty của bạn.
+          </p>
         </div>
-        <div className="flex gap-3">
-          <button className="flex items-center gap-2 px-6 py-2.5 bg-surface-container-high rounded-full font-semibold text-sm hover:bg-surface-container-highest transition-colors">
-            <Download className="w-5 h-5" /> Export CSV
-          </button>
-          <button className="flex items-center gap-2 px-6 py-2.5 signature-gradient text-white rounded-full font-semibold text-sm shadow-md active:scale-95 transition-transform">
-            <UserPlus className="w-5 h-5" /> Add Candidate
-          </button>
-        </div>
+        <button
+          type="button"
+          className="flex items-center gap-2 px-6 py-2.5 bg-surface-container-high rounded-full font-semibold text-sm hover:bg-surface-container-highest transition-colors"
+        >
+          <Download className="w-5 h-5" />
+          Export CSV
+        </button>
       </div>
 
-      {/* Filters Area */}
       <div className="glass-card rounded-xl p-6 mb-8 border border-outline-variant/10 shadow-sm">
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-          <div className="lg:col-span-1 relative">
-            <label className="block text-[10px] font-bold uppercase tracking-[0.05em] text-on-surface-variant mb-2 ml-1">Keyword Search</label>
+          <div className="lg:col-span-2 relative">
+            <label className="block text-[10px] font-bold uppercase tracking-[0.05em] text-on-surface-variant mb-2 ml-1">
+              Tìm kiếm
+            </label>
             <Search className="absolute left-4 bottom-3 w-5 h-5 text-outline" />
-            <input className="w-full bg-surface-container-high border-none rounded-xl pl-11 pr-4 py-2.5 text-sm focus:ring-2 focus:ring-primary/30 outline-none" placeholder="Design, React, Manager..." type="text"/>
+            <input
+              className="w-full bg-surface-container-high border-none rounded-xl pl-11 pr-4 py-2.5 text-sm focus:ring-2 focus:ring-primary/30 outline-none"
+              placeholder="Tên, email, vị trí ứng tuyển..."
+              type="text"
+              value={keyword}
+              onChange={(event) => setKeyword(event.target.value)}
+            />
           </div>
           <div>
-            <label className="block text-[10px] font-bold uppercase tracking-[0.05em] text-on-surface-variant mb-2 ml-1">Expertise</label>
-            <select className="w-full bg-surface-container-high border-none rounded-xl px-4 py-2.5 text-sm focus:ring-2 focus:ring-primary/30 appearance-none outline-none">
-              <option>All Skill Levels</option>
-              <option>Junior (0-2 yrs)</option>
-              <option>Mid-Level (3-5 yrs)</option>
-              <option>Senior (6-10 yrs)</option>
-              <option>Expert (10+ yrs)</option>
-            </select>
-          </div>
-          <div>
-            <label className="block text-[10px] font-bold uppercase tracking-[0.05em] text-on-surface-variant mb-2 ml-1">Location</label>
-            <select className="w-full bg-surface-container-high border-none rounded-xl px-4 py-2.5 text-sm focus:ring-2 focus:ring-primary/30 outline-none">
-              <option>Worldwide</option>
-              <option>Remote Only</option>
-              <option>On-site: San Francisco</option>
-              <option>On-site: New York</option>
-              <option>On-site: London</option>
-            </select>
+            <label className="block text-[10px] font-bold uppercase tracking-[0.05em] text-on-surface-variant mb-2 ml-1">
+              Tổng ứng viên
+            </label>
+            <div className="rounded-xl bg-surface-container-high px-4 py-2.5 text-sm font-bold text-on-surface">
+              {filteredCandidates.length}
+            </div>
           </div>
           <div className="flex items-end">
-            <button className="w-full bg-secondary/10 text-secondary border border-secondary/20 rounded-xl py-2.5 font-bold text-sm hover:bg-secondary/20 transition-all flex items-center justify-center gap-2">
-              <SlidersHorizontal className="w-5 h-5" /> Advanced Filters
+            <button
+              type="button"
+              className="w-full bg-secondary/10 text-secondary border border-secondary/20 rounded-xl py-2.5 font-bold text-sm hover:bg-secondary/20 transition-all flex items-center justify-center gap-2"
+            >
+              <SlidersHorizontal className="w-5 h-5" />
+              Bộ lọc
             </button>
           </div>
         </div>
       </div>
 
-      {/* Candidate List/Table */}
+      {errorMessage && (
+        <div className="mb-6 flex items-center gap-2 rounded-xl border border-error/20 bg-error/10 px-4 py-3 text-sm font-medium text-error">
+          <AlertCircle className="w-4 h-4" />
+          {errorMessage}
+        </div>
+      )}
+
       <div className="bg-surface-container-lowest rounded-xl overflow-hidden border border-outline-variant/10 shadow-sm">
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse">
             <thead>
               <tr className="bg-surface-container-high/50 text-[10px] font-bold uppercase tracking-[0.05em] text-on-surface-variant">
-                <th className="px-6 py-4">Candidate</th>
-                <th className="px-6 py-4">Top Skills</th>
-                <th className="px-6 py-4">Experience</th>
+                <th className="px-6 py-4">Ứng viên</th>
+                <th className="px-6 py-4">Vị trí gần nhất</th>
+                <th className="px-6 py-4">Số đơn</th>
                 <th className="px-6 py-4">AI Match</th>
-                <th className="px-6 py-4 text-right">Action</th>
+                <th className="px-6 py-4">Ngày nộp</th>
+                <th className="px-6 py-4 text-right">Hành động</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-outline-variant/10">
-              
-              {MOCK_CANDIDATES.map((candidate) => {
-                const matchScore = candidate.matchScore ?? 0;
-
-                return (
-                <tr key={candidate.id} className="bg-surface-container-lowest hover:bg-surface-container-low/50 transition-colors group">
-                  <td className="px-6 py-5">
-                    <div className="flex items-center gap-4">
-                      <div className="relative">
-                        <img className="w-12 h-12 rounded-xl object-cover ring-2 ring-transparent group-hover:ring-primary/20 transition-all" src={candidate.avatar} alt={candidate.name} />
-                        {matchScore > 90 && (
-                          <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-green-500 border-2 border-white rounded-full"></div>
-                        )}
-                      </div>
-                      <div>
-                        <p className="font-bold text-on-surface">{candidate.name}</p>
-                        <p className="text-xs text-on-surface-variant">{candidate.title}</p>
-                      </div>
-                    </div>
-                  </td>
-                  <td className="px-6 py-5">
-                    <div className="flex flex-wrap gap-1.5">
-                      {candidate.skills.slice(0, 3).map((skill, idx) => (
-                        <span key={idx} className="px-2.5 py-1 bg-primary/5 text-primary text-[10px] font-bold rounded-full border border-primary/10 uppercase">
-                          {skill}
-                        </span>
-                      ))}
-                    </div>
-                  </td>
-                  <td className="px-6 py-5">
-                    <p className="text-sm font-medium text-on-surface">{candidate.experience}</p>
-                  </td>
-                  <td className="px-6 py-5">
-                    <div className="flex items-center gap-3">
-                      <div className="w-16 h-2 bg-surface-container-highest rounded-full overflow-hidden">
-                        <div className="h-full signature-gradient" style={{ width: `${matchScore}%` }}></div>
-                      </div>
-                      <span className="text-sm font-extrabold text-secondary">{matchScore}%</span>
-                    </div>
-                  </td>
-                  <td className="px-6 py-5 text-right">
-                    <Link href={`/recruiter/candidates/${candidate.id}`} className="inline-block px-5 py-2 bg-surface-variant/30 text-on-surface hover:bg-primary hover:text-white rounded-full text-xs font-bold transition-all shadow-sm">
-                      View Profile
-                    </Link>
+              {loading ? (
+                <tr>
+                  <td className="px-6 py-8 text-on-surface-variant" colSpan={6}>
+                    Đang tải danh sách ứng viên...
                   </td>
                 </tr>
-              )})}
-              
+              ) : filteredCandidates.length === 0 ? (
+                <tr>
+                  <td className="px-6 py-10 text-center text-on-surface-variant" colSpan={6}>
+                    <BriefcaseBusiness className="mx-auto mb-3 h-9 w-9 text-primary" />
+                    Chưa có ứng viên phù hợp.
+                  </td>
+                </tr>
+              ) : (
+                filteredCandidates.map((candidate) => {
+                  const latest = candidate.latestApplication;
+                  const matchScore = latest.aiScore != null ? Math.round(latest.aiScore) : null;
+
+                  return (
+                    <tr key={candidate.candidateId} className="bg-surface-container-lowest hover:bg-surface-container-low/50 transition-colors group">
+                      <td className="px-6 py-5">
+                        <div className="flex items-center gap-4">
+                          <div className="w-12 h-12 rounded-xl bg-primary/10 text-primary flex items-center justify-center font-black">
+                            {(candidate.candidateName ?? candidate.candidateEmail ?? "?").slice(0, 1).toUpperCase()}
+                          </div>
+                          <div>
+                            <p className="font-bold text-on-surface">{candidate.candidateName ?? "Ứng viên"}</p>
+                            <p className="text-xs text-on-surface-variant">{candidate.candidateEmail ?? candidate.candidatePhone ?? "--"}</p>
+                          </div>
+                        </div>
+                      </td>
+                      <td className="px-6 py-5">
+                        <p className="text-sm font-bold text-on-surface">{latest.jobTitle}</p>
+                        <p className="text-xs text-on-surface-variant">{latest.cvName ?? "CV đã nộp"}</p>
+                      </td>
+                      <td className="px-6 py-5">
+                        <span className="rounded-full bg-surface-container-high px-3 py-1 text-xs font-bold text-on-surface">
+                          {candidate.applications.length}
+                        </span>
+                      </td>
+                      <td className="px-6 py-5">
+                        {matchScore == null ? (
+                          <span className="text-sm text-on-surface-variant">--</span>
+                        ) : (
+                          <div className="flex items-center gap-3">
+                            <div className="w-16 h-2 bg-surface-container-highest rounded-full overflow-hidden">
+                              <div className="h-full signature-gradient" style={{ width: `${matchScore}%` }} />
+                            </div>
+                            <span className="text-sm font-extrabold text-secondary">{matchScore}%</span>
+                          </div>
+                        )}
+                      </td>
+                      <td className="px-6 py-5 text-sm text-on-surface-variant">{formatDate(latest.appliedAt)}</td>
+                      <td className="px-6 py-5 text-right">
+                        <Link
+                          href="/recruiter/pipeline"
+                          className="inline-block px-5 py-2 bg-surface-variant/30 text-on-surface hover:bg-primary hover:text-white rounded-full text-xs font-bold transition-all shadow-sm"
+                        >
+                          Xem pipeline
+                        </Link>
+                      </td>
+                    </tr>
+                  );
+                })
+              )}
             </tbody>
           </table>
-        </div>
-        
-        {/* Pagination */}
-        <div className="px-6 py-4 bg-surface-container-high/30 flex items-center justify-between">
-          <p className="text-xs font-medium text-on-surface-variant">Showing <span className="text-on-surface">1-{MOCK_CANDIDATES.length}</span> of <span className="text-on-surface">12</span> candidates</p>
-          <div className="flex gap-2">
-            <button className="p-2 bg-surface-container-lowest rounded-lg border border-outline-variant/10 text-on-surface-variant hover:text-primary transition-colors">
-              <ChevronLeft className="w-4 h-4" />
-            </button>
-            <button className="px-3.5 py-2 bg-primary text-white rounded-lg text-xs font-bold">1</button>
-            <button className="px-3.5 py-2 bg-surface-container-lowest text-on-surface-variant rounded-lg text-xs font-bold hover:bg-surface-container transition-colors">2</button>
-            <button className="px-3.5 py-2 bg-surface-container-lowest text-on-surface-variant rounded-lg text-xs font-bold hover:bg-surface-container transition-colors">3</button>
-            <button className="p-2 bg-surface-container-lowest rounded-lg border border-outline-variant/10 text-on-surface-variant hover:text-primary transition-colors">
-              <ChevronRight className="w-4 h-4" />
-            </button>
-          </div>
-        </div>
-      </div>
-
-      {/* Bento Stats Grid (Additional Value) */}
-      <div className="mt-12 grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div className="glass-card p-6 rounded-2xl border border-outline-variant/5 shadow-sm overflow-hidden relative group">
-          <div className="absolute -right-4 -top-4 w-24 h-24 bg-primary/5 rounded-full blur-2xl group-hover:bg-primary/10 transition-all"></div>
-          <p className="text-[10px] font-bold uppercase tracking-widest text-on-surface-variant mb-4">Database Health</p>
-          <h3 className="text-3xl font-black text-on-surface">2.4k+</h3>
-          <p className="text-xs text-on-surface-variant mt-1 font-medium">Vetted profiles available</p>
-        </div>
-        <div className="glass-card p-6 rounded-2xl border border-outline-variant/5 shadow-sm overflow-hidden relative group">
-          <div className="absolute -right-4 -top-4 w-24 h-24 bg-secondary/5 rounded-full blur-2xl group-hover:bg-secondary/10 transition-all"></div>
-          <p className="text-[10px] font-bold uppercase tracking-widest text-on-surface-variant mb-4">AI Processing</p>
-          <h3 className="text-3xl font-black text-on-surface">142</h3>
-          <p className="text-xs text-on-surface-variant mt-1 font-medium">Matched since last login</p>
-        </div>
-        <div className="glass-card p-6 rounded-2xl border border-outline-variant/5 shadow-sm overflow-hidden relative group">
-          <div className="absolute -right-4 -top-4 w-24 h-24 bg-green-500/5 rounded-full blur-2xl group-hover:bg-green-500/10 transition-all"></div>
-          <p className="text-[10px] font-bold uppercase tracking-widest text-on-surface-variant mb-4">Profile Freshness</p>
-          <h3 className="text-3xl font-black text-on-surface">94%</h3>
-          <p className="text-xs text-on-surface-variant mt-1 font-medium">Updated within 30 days</p>
         </div>
       </div>
     </div>
