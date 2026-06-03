@@ -69,6 +69,24 @@ export type JobRecommendationResponse = {
   matchScore?: number | null;
 };
 
+export type CvItemResponse = {
+  id: string;
+  cvName: string;
+  uploadedAt: string;
+  isDefault?: boolean;
+  aiStatus?: "PENDING" | "COMPLETED" | "FAILED";
+};
+
+export type CvRecommendationResponse = {
+  cv: CvItemResponse;
+  matchScore?: number | null;
+  candidateId?: string | null;
+  candidateName?: string | null;
+  candidateHeadline?: string | null;
+  candidateAvatar?: string | null;
+};
+
+
 type ApiErrorShape = {
   code?: number;
   message?: string;
@@ -162,4 +180,10 @@ export function createJob(payload: JobPayload): Promise<JobResponse> {
     method: "POST",
     body: JSON.stringify(payload),
   });
+}
+
+export function getJobMatches(jobId: string, topK = 10): Promise<CvRecommendationResponse[]> {
+  const params = new URLSearchParams();
+  params.set("topK", String(topK));
+  return request<CvRecommendationResponse[]>(`/api/jobs/${jobId}/matches?${params.toString()}`);
 }

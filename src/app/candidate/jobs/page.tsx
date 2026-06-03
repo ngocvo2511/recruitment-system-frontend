@@ -180,8 +180,9 @@ export default function CandidateJobsPage() {
                     <h3 className="text-xl font-bold group-hover:text-primary transition-colors text-on-surface">{job.title}</h3>
                     {idx === 0 && <span className="px-2 py-0.5 bg-green-100 text-green-700 text-[10px] font-bold uppercase rounded">Urgent</span>}
                     {matchScore != null && (
-                      <span className="px-2 py-0.5 bg-primary/10 text-primary text-[10px] font-bold uppercase rounded">
-                        {matchScore}% Match
+                      <span className="flex items-center gap-1 px-3 py-1 signature-gradient text-white text-[11px] font-black uppercase rounded-full shadow-md shadow-primary/20">
+                        <Sparkles className="w-3 h-3" />
+                        {matchScore}% Phù hợp AI
                       </span>
                     )}
                   </div>

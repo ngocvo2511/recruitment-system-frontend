@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect } from "react";
 import {
+  Activity,
   Bell,
   Briefcase,
   FileText,
@@ -22,6 +23,7 @@ const navItems = [
   { href: "/admin/users", label: "User Management", icon: Users },
   { href: "/admin/jobs", label: "Job Management", icon: Briefcase },
   { href: "/admin/company-moderation", label: "Company Moderation", icon: ShieldCheck },
+  { href: "/admin/operations", label: "Operations", icon: Activity },
   { href: "/admin/settings", label: "System Settings", icon: Settings },
 ];
 
