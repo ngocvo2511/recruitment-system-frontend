@@ -6,7 +6,7 @@ import Link from "next/link";
 import { Check, Eye, EyeOff, Loader2, Lock, Mail } from "lucide-react";
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:8080";
-const LOGIN_ERROR_MESSAGE = "Invalid admin credentials.";
+const LOGIN_ERROR_MESSAGE = "Thông tin đăng nhập admin không hợp lệ.";
 
 function AdminLoginForm() {
   const router = useRouter();
@@ -59,8 +59,8 @@ function AdminLoginForm() {
 
       <div className="glass-card rounded-[2rem] p-10 md:p-12 shadow-[0_32px_64px_-16px_rgba(0,80,212,0.08)] border border-white/40 relative z-10">
         <div className="mb-10 text-center md:text-left animate-fade-in-up">
-          <h1 className="text-4xl font-extrabold tracking-[-0.03em] text-on-surface mb-3">Admin Access</h1>
-          <p className="text-on-surface-variant leading-relaxed">Securely authenticate to manage the CareerCurator platform.</p>
+          <h1 className="text-4xl font-extrabold tracking-[-0.03em] text-on-surface mb-3">Đăng nhập admin</h1>
+          <p className="text-on-surface-variant leading-relaxed">Xác thực để quản lý và kiểm duyệt hệ thống tuyển dụng.</p>
         </div>
 
         <form className="space-y-6" onSubmit={handleLogin}>
@@ -73,7 +73,7 @@ function AdminLoginForm() {
 
             <div className="group">
               <label className="block text-[10px] font-bold uppercase tracking-[0.1em] text-on-surface-variant mb-2 px-4">
-                Admin Email
+                Email admin
               </label>
               <div className="relative">
                 <div className="absolute inset-y-0 left-4 flex items-center pointer-events-none text-outline-variant group-focus-within:text-primary transition-colors">
@@ -93,7 +93,7 @@ function AdminLoginForm() {
 
             <div className="group">
               <label className="block text-[10px] font-bold uppercase tracking-[0.1em] text-on-surface-variant mb-2 px-4">
-                Password
+                Mật khẩu
               </label>
               <div className="relative">
                 <div className="absolute inset-y-0 left-4 flex items-center pointer-events-none text-outline-variant group-focus-within:text-primary transition-colors">
@@ -105,14 +105,14 @@ function AdminLoginForm() {
                   value={password}
                   onChange={(event) => setPassword(event.target.value)}
                   className="w-full pl-12 pr-12 py-4 bg-surface-container-high/50 border-none rounded-xl focus:ring-2 focus:ring-primary/40 focus:bg-white transition-all outline-none placeholder:text-outline-variant"
-                  placeholder="Password"
+                  placeholder="Mật khẩu"
                   type={showPassword ? "text" : "password"}
                 />
                 <button
                   className="absolute inset-y-0 right-4 flex items-center text-outline-variant hover:text-on-surface"
                   onClick={() => setShowPassword((visible) => !visible)}
                   type="button"
-                  aria-label={showPassword ? "Hide password" : "Show password"}
+                  aria-label={showPassword ? "Ẩn mật khẩu" : "Hiện mật khẩu"}
                 >
                   {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                 </button>
@@ -126,10 +126,10 @@ function AdminLoginForm() {
                 <input className="peer appearance-none w-5 h-5 rounded-md border-2 border-outline-variant checked:bg-primary checked:border-primary transition-all cursor-pointer" type="checkbox" />
                 <Check className="absolute w-3.5 h-3.5 text-white opacity-0 peer-checked:opacity-100 pointer-events-none" strokeWidth={3} />
               </div>
-              <span className="text-sm font-medium text-on-surface-variant group-hover:text-on-surface transition-colors">Remember session</span>
+              <span className="text-sm font-medium text-on-surface-variant group-hover:text-on-surface transition-colors">Ghi nhớ phiên đăng nhập</span>
             </label>
             <Link className="text-sm font-semibold text-primary hover:underline underline-offset-4 decoration-2" href="#">
-              Reset credentials?
+              Quên thông tin?
             </Link>
           </div>
 
@@ -143,7 +143,7 @@ function AdminLoginForm() {
                 <Loader2 className="w-5 h-5 animate-spin" />
               ) : (
                 <>
-                  Authorize
+                  Đăng nhập
                   <span className="material-symbols-outlined text-[20px]">arrow_forward</span>
                 </>
               )}
@@ -153,7 +153,7 @@ function AdminLoginForm() {
 
         <div className="mt-8 text-center border-t border-outline-variant/10 pt-6">
           <p className="text-on-surface-variant text-[10px] uppercase tracking-[0.2em] font-medium">
-            Unauthorized access attempts are monitored
+            Mọi truy cập trái phép đều được ghi nhận
           </p>
         </div>
       </div>

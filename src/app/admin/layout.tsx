@@ -18,11 +18,11 @@ import {
 } from "lucide-react";
 
 const navItems = [
-  { href: "/admin/dashboard", label: "Dashboard", icon: LayoutDashboard },
-  { href: "/admin/users", label: "User Management", icon: Users },
-  { href: "/admin/jobs", label: "Job Management", icon: Briefcase },
-  { href: "/admin/company-moderation", label: "Company Moderation", icon: ShieldCheck },
-  { href: "/admin/settings", label: "System Settings", icon: Settings },
+  { href: "/admin/dashboard", label: "Tổng quan", icon: LayoutDashboard },
+  { href: "/admin/users", label: "Người dùng", icon: Users },
+  { href: "/admin/jobs", label: "Tin tuyển dụng", icon: Briefcase },
+  { href: "/admin/company-moderation", label: "Kiểm duyệt công ty", icon: ShieldCheck },
+  { href: "/admin/settings", label: "Cài đặt hệ thống", icon: Settings },
 ];
 
 function isAdminAccount(accountType: string | null): boolean {
@@ -85,7 +85,7 @@ export default function AdminLayout({
         <div className="mt-auto space-y-2">
           <button className="w-full bg-primary-container text-on-primary-container font-semibold py-3 rounded-xl flex items-center justify-center gap-2 hover:scale-[1.02] transition-transform shadow-sm" type="button">
             <FileText className="w-5 h-5" />
-            Generate Report
+            Xuất báo cáo
           </button>
           <button
             className="w-full text-slate-500 font-semibold py-3 rounded-xl flex items-center justify-center gap-2 hover:bg-slate-100 hover:text-slate-900 transition-colors"
@@ -93,7 +93,7 @@ export default function AdminLayout({
             type="button"
           >
             <LogOut className="w-5 h-5" />
-            Sign out
+            Đăng xuất
           </button>
         </div>
       </aside>
@@ -111,7 +111,7 @@ export default function AdminLayout({
               <Search className="absolute left-3 text-slate-400 w-4 h-4 pointer-events-none" />
               <input
                 className="w-full bg-slate-100/50 border-none rounded-full py-2.5 pl-10 focus:ring-2 focus:ring-primary/20 text-sm outline-none transition-all placeholder:text-slate-400 font-medium"
-                placeholder="Search analytics or users..."
+                placeholder="Tìm nhanh dữ liệu admin..."
                 type="text"
               />
             </div>

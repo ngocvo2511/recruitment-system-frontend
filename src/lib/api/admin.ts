@@ -73,6 +73,99 @@ export type AdminDashboardResponse = {
   recentActivity: AdminActivityItem[];
 };
 
+export type AdminPageResponse<T> = {
+  items: T[];
+  page: number;
+  size: number;
+  totalItems: number;
+  totalPages: number;
+};
+
+export type AdminUserResponse = {
+  id: string;
+  email: string;
+  role?: string | null;
+  enabled: boolean;
+  createdAt?: string | null;
+  updatedAt?: string | null;
+};
+
+export type AdminCompanyResponse = {
+  id: string;
+  name: string;
+  website?: string | null;
+  email?: string | null;
+  phone?: string | null;
+  address?: string | null;
+  city?: string | null;
+  country?: string | null;
+  description?: string | null;
+  industry?: string | null;
+  companySize?: number | null;
+  taxCode?: string | null;
+  businessLicense?: string | null;
+  status: CompanyStatus;
+  createdById?: string | null;
+  ownerEmail?: string | null;
+  ownerName?: string | null;
+  memberCount: number;
+  pendingMemberCount: number;
+  openJobCount: number;
+};
+
+export type AdminJobResponse = {
+  id: string;
+  title: string;
+  description?: string | null;
+  workingTime?: string | null;
+  location?: string | null;
+  employmentType?: string | null;
+  workMode?: string | null;
+  level?: string | null;
+  minSalary?: number | null;
+  maxSalary?: number | null;
+  currency?: string | null;
+  salaryNegotiable?: boolean | null;
+  headcount?: number | null;
+  deadline?: string | null;
+  companyId?: string | null;
+  companyName?: string | null;
+  companyStatus?: string | null;
+  recruiterId?: string | null;
+  recruiterEmail?: string | null;
+  status: JobStatus;
+  createdAt?: string | null;
+  updatedAt?: string | null;
+  publishedAt?: string | null;
+  closedAt?: string | null;
+  applicationCount: number;
+};
+
+export type AdminAnalyticsOverviewResponse = {
+  overview: {
+    totalUsers: number;
+    totalCompanies: number;
+    totalJobs: number;
+    totalApplications: number;
+    jobsLast30Days: number;
+    applicationsLast30Days: number;
+  };
+  funnel: {
+    applications: number;
+    screening: number;
+    interviews: number;
+    offers: number;
+    hires: number;
+    rejected: number;
+  };
+  aiMetrics: {
+    scoredApplications: number;
+    averageApplicationAiScore?: number | null;
+  };
+  applicationsByDay: Array<{ date: string; count: number }>;
+  jobsByDay: Array<{ date: string; count: number }>;
+};
+
 type ApiErrorShape = {
   code?: number;
   message?: string;
@@ -141,4 +234,108 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
 
 export function getAdminDashboard(): Promise<AdminDashboardResponse> {
   return request<AdminDashboardResponse>("/api/admin/dashboard");
+}
+
+export function getAdminUsers(params: {
+  page?: number;
+  size?: number;
+  keyword?: string;
+  role?: string;
+  enabled?: boolean | null;
+} = {}): Promise<AdminPageResponse<AdminUserResponse>> {
+  const search = new URLSearchParams();
+  search.set("page", String(params.page ?? 0));
+  search.set("size", String(params.size ?? 20));
+  if (params.keyword) search.set("keyword", params.keyword);
+  if (params.role && params.role !== "ALL") search.set("role", params.role);
+  if (params.enabled !== undefined && params.enabled !== null) search.set("enabled", String(params.enabled));
+  return request<AdminPageResponse<AdminUserResponse>>(`/api/admin/users?${search.toString()}`);
+}
+
+export function enableAdminUser(userId: string): Promise<AdminUserResponse> {
+  return request<AdminUserResponse>(`/api/admin/users/${userId}/enable`, {
+    method: "PATCH",
+  });
+}
+
+export function disableAdminUser(userId: string): Promise<AdminUserResponse> {
+  return request<AdminUserResponse>(`/api/admin/users/${userId}/disable`, {
+    method: "PATCH",
+  });
+}
+
+export function getAdminCompanies(params: {
+  page?: number;
+  size?: number;
+  keyword?: string;
+  status?: CompanyStatus | "ALL";
+} = {}): Promise<AdminPageResponse<AdminCompanyResponse>> {
+  const search = new URLSearchParams();
+  search.set("page", String(params.page ?? 0));
+  search.set("size", String(params.size ?? 20));
+  if (params.keyword) search.set("keyword", params.keyword);
+  if (params.status && params.status !== "ALL") search.set("status", params.status);
+  return request<AdminPageResponse<AdminCompanyResponse>>(`/api/admin/companies?${search.toString()}`);
+}
+
+export function verifyAdminCompany(companyId: string): Promise<AdminCompanyResponse> {
+  return request<AdminCompanyResponse>(`/api/admin/companies/${companyId}/verify`, {
+    method: "PATCH",
+  });
+}
+
+export function rejectAdminCompany(companyId: string): Promise<AdminCompanyResponse> {
+  return request<AdminCompanyResponse>(`/api/admin/companies/${companyId}/reject`, {
+    method: "PATCH",
+  });
+}
+
+export function requestMoreInfoAdminCompany(companyId: string): Promise<AdminCompanyResponse> {
+  return request<AdminCompanyResponse>(`/api/admin/companies/${companyId}/request-more-info`, {
+    method: "PATCH",
+  });
+}
+
+export function getAdminJobs(params: {
+  page?: number;
+  size?: number;
+  keyword?: string;
+  status?: JobStatus | "ALL";
+  companyStatus?: CompanyStatus | "ALL";
+  fromDate?: string;
+  toDate?: string;
+} = {}): Promise<AdminPageResponse<AdminJobResponse>> {
+  const search = new URLSearchParams();
+  search.set("page", String(params.page ?? 0));
+  search.set("size", String(params.size ?? 20));
+  if (params.keyword) search.set("keyword", params.keyword);
+  if (params.status && params.status !== "ALL") search.set("status", params.status);
+  if (params.companyStatus && params.companyStatus !== "ALL") search.set("companyStatus", params.companyStatus);
+  if (params.fromDate) search.set("fromDate", params.fromDate);
+  if (params.toDate) search.set("toDate", params.toDate);
+  return request<AdminPageResponse<AdminJobResponse>>(`/api/admin/jobs?${search.toString()}`);
+}
+
+export function approveAdminJob(jobId: string): Promise<AdminJobResponse> {
+  return request<AdminJobResponse>(`/api/admin/jobs/${jobId}/approve`, { method: "PATCH" });
+}
+
+export function rejectAdminJob(jobId: string): Promise<AdminJobResponse> {
+  return request<AdminJobResponse>(`/api/admin/jobs/${jobId}/reject`, { method: "PATCH" });
+}
+
+export function flagAdminJob(jobId: string): Promise<AdminJobResponse> {
+  return request<AdminJobResponse>(`/api/admin/jobs/${jobId}/flag`, { method: "PATCH" });
+}
+
+export function unflagAdminJob(jobId: string): Promise<AdminJobResponse> {
+  return request<AdminJobResponse>(`/api/admin/jobs/${jobId}/unflag`, { method: "PATCH" });
+}
+
+export function closeAdminJob(jobId: string): Promise<AdminJobResponse> {
+  return request<AdminJobResponse>(`/api/admin/jobs/${jobId}/close`, { method: "PATCH" });
+}
+
+export function getAdminAnalyticsOverview(): Promise<AdminAnalyticsOverviewResponse> {
+  return request<AdminAnalyticsOverviewResponse>("/api/admin/analytics/overview");
 }

@@ -15,16 +15,23 @@ import {
   Users,
   Zap,
 } from "lucide-react";
-import { ApiError, getAdminDashboard, type AdminActivityItem, type AdminDashboardResponse } from "@/lib/api/admin";
+import {
+  ApiError,
+  getAdminAnalyticsOverview,
+  getAdminDashboard,
+  type AdminActivityItem,
+  type AdminAnalyticsOverviewResponse,
+  type AdminDashboardResponse,
+} from "@/lib/api/admin";
 
 function formatNumber(value?: number | null): string {
   return new Intl.NumberFormat("en-US").format(value ?? 0);
 }
 
 function formatDate(value?: string | null): string {
-  if (!value) return "No date";
+  if (!value) return "Chưa có ngày";
   const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return "No date";
+  if (Number.isNaN(date.getTime())) return "Chưa có ngày";
   return date.toLocaleDateString("vi-VN");
 }
 
@@ -61,6 +68,7 @@ function RecentActivityRow({ item }: { item: AdminActivityItem }) {
 
 export default function AdminDashboardPage() {
   const [dashboard, setDashboard] = useState<AdminDashboardResponse | null>(null);
+  const [analytics, setAnalytics] = useState<AdminAnalyticsOverviewResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
@@ -70,11 +78,17 @@ export default function AdminDashboardPage() {
       setLoading(true);
       setErrorMessage(null);
       try {
-        const data = await getAdminDashboard();
-        if (active) setDashboard(data);
+        const [dashboardData, analyticsData] = await Promise.all([
+          getAdminDashboard(),
+          getAdminAnalyticsOverview(),
+        ]);
+        if (active) {
+          setDashboard(dashboardData);
+          setAnalytics(analyticsData);
+        }
       } catch (error) {
         if (!active) return;
-        setErrorMessage(error instanceof ApiError ? error.message : "Unable to load admin dashboard.");
+        setErrorMessage(error instanceof ApiError ? error.message : "Không thể tải dashboard admin.");
       } finally {
         if (active) setLoading(false);
       }
@@ -97,11 +111,13 @@ export default function AdminDashboardPage() {
     ];
   }, [metrics]);
   const chartMax = Math.max(...chartValues, 1);
+  const applicationSeriesMax = Math.max(...(analytics?.applicationsByDay.map((point) => point.count) ?? [0]), 1);
+  const jobSeriesMax = Math.max(...(analytics?.jobsByDay.map((point) => point.count) ?? [0]), 1);
 
   if (loading) {
     return (
       <div className="max-w-7xl mx-auto">
-        <div className="glass-card rounded-2xl p-8 text-on-surface-variant">Loading admin dashboard...</div>
+        <div className="glass-card rounded-2xl p-8 text-on-surface-variant">Đang tải dashboard admin...</div>
       </div>
     );
   }
@@ -111,7 +127,7 @@ export default function AdminDashboardPage() {
       <div className="max-w-7xl mx-auto">
         <div className="flex items-center gap-2 rounded-xl border border-error/20 bg-error/10 px-4 py-3 text-sm font-medium text-error">
           <AlertCircle className="w-4 h-4" />
-          {errorMessage ?? "Dashboard data is unavailable."}
+          {errorMessage ?? "Chưa có dữ liệu dashboard."}
         </div>
       </div>
     );
@@ -120,8 +136,8 @@ export default function AdminDashboardPage() {
   return (
     <div className="max-w-7xl mx-auto animate-fade-in-up">
       <header className="mb-10">
-        <h1 className="text-4xl font-extrabold text-on-surface tracking-tight mb-2">System Overview</h1>
-        <p className="text-on-surface-variant font-medium">Live platform health, moderation queues, and activity.</p>
+        <h1 className="text-4xl font-extrabold text-on-surface tracking-tight mb-2">Tổng quan hệ thống</h1>
+        <p className="text-on-surface-variant font-medium">Theo dõi sức khỏe nền tảng, hàng đợi kiểm duyệt và hoạt động mới nhất.</p>
       </header>
 
       <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-10">
@@ -131,14 +147,14 @@ export default function AdminDashboardPage() {
               <Users className="w-6 h-6" />
             </div>
             <span className="flex items-center text-xs font-bold text-primary bg-primary/10 px-2.5 py-1 rounded-full">
-              {formatNumber(metrics.totalAdmins)} admins
+              {formatNumber(metrics.totalAdmins)} admin
             </span>
           </div>
           <div className="mt-5">
-            <p className="text-[10px] uppercase tracking-widest text-on-surface-variant font-bold mb-1">Total Users</p>
+            <p className="text-[10px] uppercase tracking-widest text-on-surface-variant font-bold mb-1">Tổng người dùng</p>
             <h2 className="text-3xl font-black text-on-surface tracking-tight">{formatNumber(metrics.totalUsers)}</h2>
             <p className="text-xs text-on-surface-variant mt-2 font-medium">
-              {formatNumber(metrics.totalCandidates)} candidates - {formatNumber(metrics.totalRecruiters)} recruiters
+              {formatNumber(metrics.totalCandidates)} ứng viên - {formatNumber(metrics.totalRecruiters)} nhà tuyển dụng
             </p>
           </div>
         </div>
@@ -149,14 +165,14 @@ export default function AdminDashboardPage() {
               <Briefcase className="w-6 h-6" />
             </div>
             <span className="flex items-center text-xs font-bold text-orange-600 bg-orange-50 px-2.5 py-1 rounded-full">
-              {formatNumber(metrics.pendingJobs)} pending
+              {formatNumber(metrics.pendingJobs)} chờ duyệt
             </span>
           </div>
           <div className="mt-5">
-            <p className="text-[10px] uppercase tracking-widest text-on-surface-variant font-bold mb-1">Jobs</p>
+            <p className="text-[10px] uppercase tracking-widest text-on-surface-variant font-bold mb-1">Tin tuyển dụng</p>
             <h2 className="text-3xl font-black text-on-surface tracking-tight">{formatNumber(metrics.totalJobs)}</h2>
             <p className="text-xs text-on-surface-variant mt-2 font-medium">
-              {formatNumber(metrics.publishedJobs)} published - {formatNumber(metrics.flaggedJobs)} flagged
+              {formatNumber(metrics.publishedJobs)} đã đăng - {formatNumber(metrics.flaggedJobs)} bị gắn cờ
             </p>
           </div>
         </div>
@@ -167,14 +183,14 @@ export default function AdminDashboardPage() {
               <Building2 className="w-6 h-6" />
             </div>
             <span className="flex items-center text-xs font-bold text-orange-600 bg-orange-50 px-2.5 py-1 rounded-full">
-              {formatNumber(metrics.pendingCompanies)} pending
+              {formatNumber(metrics.pendingCompanies)} chờ xác minh
             </span>
           </div>
           <div className="mt-5">
-            <p className="text-[10px] uppercase tracking-widest text-on-surface-variant font-bold mb-1">Companies</p>
+            <p className="text-[10px] uppercase tracking-widest text-on-surface-variant font-bold mb-1">Công ty</p>
             <h2 className="text-3xl font-black text-on-surface tracking-tight">{formatNumber(metrics.totalCompanies)}</h2>
             <p className="text-xs text-on-surface-variant mt-2 font-medium">
-              {formatNumber(metrics.activeCompanies)} verified/active
+              {formatNumber(metrics.activeCompanies)} đã xác minh
             </p>
           </div>
         </div>
@@ -187,10 +203,10 @@ export default function AdminDashboardPage() {
             </div>
           </div>
           <div className="mt-5 relative z-10">
-            <p className="text-[10px] uppercase tracking-widest text-white/80 font-bold mb-1">Applications</p>
+            <p className="text-[10px] uppercase tracking-widest text-white/80 font-bold mb-1">Đơn ứng tuyển</p>
             <h2 className="text-3xl font-black tracking-tight text-white mb-2">{formatNumber(metrics.totalApplications)}</h2>
             <p className="text-[10px] text-white/80 font-medium">
-              {formatNumber(metrics.applicationsLast7Days)} last 7 days - {formatNumber(metrics.applicationsLast30Days)} last 30 days
+              {formatNumber(metrics.applicationsLast7Days)} trong 7 ngày - {formatNumber(metrics.applicationsLast30Days)} trong 30 ngày
             </p>
           </div>
         </div>
@@ -200,17 +216,17 @@ export default function AdminDashboardPage() {
         <div className="lg:col-span-2 glass-card rounded-3xl p-8 border border-white shadow-sm flex flex-col">
           <div className="flex justify-between items-start mb-8">
             <div>
-              <h2 className="text-xl font-bold text-on-surface mb-1">Platform Composition</h2>
-              <p className="text-sm text-on-surface-variant font-medium">Current counts from production data.</p>
+              <h2 className="text-xl font-bold text-on-surface mb-1">Cơ cấu nền tảng</h2>
+              <p className="text-sm text-on-surface-variant font-medium">Số liệu hiện tại từ dữ liệu thật.</p>
             </div>
           </div>
 
           <div className="h-64 flex items-end justify-between gap-4 px-4 relative overflow-hidden flex-1 mt-4">
             {[
-              { label: "Candidates", value: metrics.totalCandidates },
-              { label: "Recruiters", value: metrics.totalRecruiters },
-              { label: "Companies", value: metrics.totalCompanies },
-              { label: "Applications", value: metrics.totalApplications },
+              { label: "Ứng viên", value: metrics.totalCandidates },
+              { label: "Recruiter", value: metrics.totalRecruiters },
+              { label: "Công ty", value: metrics.totalCompanies },
+              { label: "Đơn ứng tuyển", value: metrics.totalApplications },
             ].map((item, index) => (
               <div key={item.label} className="flex-1 flex flex-col items-center gap-3 h-full justify-end">
                 <div
@@ -226,7 +242,7 @@ export default function AdminDashboardPage() {
         <div className="lg:col-span-1 flex flex-col">
           <div className="glass-card rounded-3xl p-6 border border-white shadow-sm flex-1 flex flex-col h-[400px]">
             <div className="flex items-center justify-between mb-6 shrink-0">
-              <h2 className="text-xl font-bold text-on-surface">Recent Activity</h2>
+              <h2 className="text-xl font-bold text-on-surface">Hoạt động gần đây</h2>
               <button className="text-slate-400 hover:text-slate-600 transition-colors" type="button" aria-label="Activity options">
                 <MoreVertical className="w-5 h-5" />
               </button>
@@ -234,7 +250,7 @@ export default function AdminDashboardPage() {
 
             <div className="space-y-6 overflow-y-auto pr-2 custom-scrollbar flex-1">
               {dashboard.recentActivity.length === 0 ? (
-                <p className="text-sm text-on-surface-variant">No platform activity yet.</p>
+                <p className="text-sm text-on-surface-variant">Chưa có hoạt động nào.</p>
               ) : (
                 dashboard.recentActivity.map((item, index) => <RecentActivityRow key={`${item.type}-${index}`} item={item} />)
               )}
@@ -247,22 +263,22 @@ export default function AdminDashboardPage() {
         <div className="glass-card rounded-3xl p-8 border border-white shadow-sm">
           <div className="flex justify-between items-center mb-6">
             <div>
-              <h2 className="text-xl font-bold text-on-surface mb-1">Company Verification Queue</h2>
-              <p className="text-sm text-on-surface-variant font-medium">Companies waiting for platform review.</p>
+              <h2 className="text-xl font-bold text-on-surface mb-1">Hàng đợi xác minh công ty</h2>
+              <p className="text-sm text-on-surface-variant font-medium">Các công ty đang chờ admin kiểm duyệt.</p>
             </div>
             <Link href="/admin/company-moderation" className="text-xs font-bold text-primary hover:underline">
-              View all
+              Xem tất cả
             </Link>
           </div>
           <div className="space-y-3">
             {dashboard.pendingCompanies.length === 0 ? (
-              <div className="rounded-2xl bg-surface-container-low/50 p-5 text-sm text-on-surface-variant">No pending companies.</div>
+              <div className="rounded-2xl bg-surface-container-low/50 p-5 text-sm text-on-surface-variant">Không có công ty chờ duyệt.</div>
             ) : (
               dashboard.pendingCompanies.map((company) => (
                 <div key={company.id} className="flex items-center justify-between gap-4 rounded-2xl bg-surface-container-low/50 p-4">
                   <div className="min-w-0">
                     <h3 className="text-sm font-bold text-on-surface truncate">{company.name}</h3>
-                    <p className="text-xs text-on-surface-variant truncate">{company.ownerEmail ?? company.email ?? "No owner email"}</p>
+                    <p className="text-xs text-on-surface-variant truncate">{company.ownerEmail ?? company.email ?? "Chưa có email chủ sở hữu"}</p>
                   </div>
                   <span className="rounded-full bg-orange-50 px-3 py-1 text-[10px] font-black uppercase text-orange-600">{company.status}</span>
                 </div>
@@ -274,16 +290,16 @@ export default function AdminDashboardPage() {
         <div className="glass-card rounded-3xl p-8 border border-white shadow-sm">
           <div className="flex justify-between items-center mb-6">
             <div>
-              <h2 className="text-xl font-bold text-on-surface mb-1">Job Moderation Queue</h2>
-              <p className="text-sm text-on-surface-variant font-medium">Jobs waiting for admin approval.</p>
+              <h2 className="text-xl font-bold text-on-surface mb-1">Hàng đợi duyệt tin tuyển dụng</h2>
+              <p className="text-sm text-on-surface-variant font-medium">Các tin đang chờ admin phê duyệt.</p>
             </div>
             <Link href="/admin/jobs" className="text-xs font-bold text-primary hover:underline">
-              View all
+              Xem tất cả
             </Link>
           </div>
           <div className="space-y-3">
             {dashboard.pendingJobs.length === 0 ? (
-              <div className="rounded-2xl bg-surface-container-low/50 p-5 text-sm text-on-surface-variant">No pending jobs.</div>
+              <div className="rounded-2xl bg-surface-container-low/50 p-5 text-sm text-on-surface-variant">Không có tin chờ duyệt.</div>
             ) : (
               dashboard.pendingJobs.map((job) => (
                 <div key={job.id} className="flex items-center justify-between gap-4 rounded-2xl bg-surface-container-low/50 p-4">
@@ -299,24 +315,109 @@ export default function AdminDashboardPage() {
         </div>
       </section>
 
+      {analytics && (
+        <section className="mb-10">
+          <div className="glass-card rounded-3xl p-8 border border-white shadow-sm">
+            <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4 mb-8">
+              <div>
+                <h2 className="text-xl font-bold text-on-surface mb-1">Phân tích 30 ngày gần đây</h2>
+                <p className="text-sm text-on-surface-variant font-medium">
+                  Số liệu thật từ đơn ứng tuyển, tin tuyển dụng và trạng thái pipeline.
+                </p>
+              </div>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                <div className="rounded-2xl bg-surface-container-low/60 px-4 py-3">
+                  <p className="text-[10px] uppercase font-bold text-on-surface-variant">Tin mới</p>
+                  <p className="text-xl font-black text-on-surface">{formatNumber(analytics.overview.jobsLast30Days)}</p>
+                </div>
+                <div className="rounded-2xl bg-surface-container-low/60 px-4 py-3">
+                  <p className="text-[10px] uppercase font-bold text-on-surface-variant">Đơn mới</p>
+                  <p className="text-xl font-black text-on-surface">{formatNumber(analytics.overview.applicationsLast30Days)}</p>
+                </div>
+                <div className="rounded-2xl bg-surface-container-low/60 px-4 py-3">
+                  <p className="text-[10px] uppercase font-bold text-on-surface-variant">Đã tuyển</p>
+                  <p className="text-xl font-black text-on-surface">{formatNumber(analytics.funnel.hires)}</p>
+                </div>
+                <div className="rounded-2xl bg-surface-container-low/60 px-4 py-3">
+                  <p className="text-[10px] uppercase font-bold text-on-surface-variant">AI score TB</p>
+                  <p className="text-xl font-black text-on-surface">
+                    {analytics.aiMetrics.averageApplicationAiScore == null
+                      ? "--"
+                      : `${Math.round(analytics.aiMetrics.averageApplicationAiScore)}%`}
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              <div className="lg:col-span-2 rounded-2xl bg-surface-container-low/40 p-5 border border-outline-variant/10">
+                <h3 className="text-sm font-bold text-on-surface mb-4">Đơn ứng tuyển theo ngày</h3>
+                <div className="h-44 flex items-end gap-1">
+                  {analytics.applicationsByDay.map((point) => (
+                    <div
+                      key={point.date}
+                      className="flex-1 rounded-t-md bg-primary/30 hover:bg-primary/50 transition-colors"
+                      style={{ height: `${Math.max((point.count / applicationSeriesMax) * 100, 4)}%` }}
+                      title={`${point.date}: ${point.count} đơn`}
+                    />
+                  ))}
+                </div>
+              </div>
+              <div className="rounded-2xl bg-surface-container-low/40 p-5 border border-outline-variant/10">
+                <h3 className="text-sm font-bold text-on-surface mb-4">Funnel ứng tuyển</h3>
+                <div className="space-y-3">
+                  {[
+                    ["Tổng đơn", analytics.funnel.applications],
+                    ["Sàng lọc", analytics.funnel.screening],
+                    ["Phỏng vấn", analytics.funnel.interviews],
+                    ["Offer", analytics.funnel.offers],
+                    ["Đã tuyển", analytics.funnel.hires],
+                    ["Từ chối", analytics.funnel.rejected],
+                  ].map(([label, value]) => (
+                    <div key={label} className="flex items-center justify-between text-sm">
+                      <span className="text-on-surface-variant">{label}</span>
+                      <span className="font-black text-on-surface">{formatNumber(Number(value))}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            <div className="mt-6 rounded-2xl bg-surface-container-low/40 p-5 border border-outline-variant/10">
+              <h3 className="text-sm font-bold text-on-surface mb-4">Tin tuyển dụng mới theo ngày</h3>
+              <div className="h-28 flex items-end gap-1">
+                {analytics.jobsByDay.map((point) => (
+                  <div
+                    key={point.date}
+                    className="flex-1 rounded-t-md bg-secondary/30 hover:bg-secondary/50 transition-colors"
+                    style={{ height: `${Math.max((point.count / jobSeriesMax) * 100, 4)}%` }}
+                    title={`${point.date}: ${point.count} tin`}
+                  />
+                ))}
+              </div>
+            </div>
+          </div>
+        </section>
+      )}
+
       <section className="mb-10">
         <div className="glass-card rounded-3xl p-8 border border-white shadow-sm">
           <div className="flex justify-between items-center mb-6">
             <div>
-              <h2 className="text-xl font-bold text-on-surface mb-1">Latest Applications</h2>
-              <p className="text-sm text-on-surface-variant font-medium">Recent candidate submissions across the platform.</p>
+              <h2 className="text-xl font-bold text-on-surface mb-1">Đơn ứng tuyển mới nhất</h2>
+              <p className="text-sm text-on-surface-variant font-medium">Các hồ sơ ứng tuyển gần đây trên toàn nền tảng.</p>
             </div>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {dashboard.recentApplications.length === 0 ? (
-              <div className="rounded-2xl bg-surface-container-low/50 p-5 text-sm text-on-surface-variant">No applications yet.</div>
+              <div className="rounded-2xl bg-surface-container-low/50 p-5 text-sm text-on-surface-variant">Chưa có đơn ứng tuyển.</div>
             ) : (
               dashboard.recentApplications.map((application) => (
                 <div key={application.id} className="rounded-2xl bg-surface-container-low/50 p-5 border border-outline-variant/10">
                   <div className="flex items-start justify-between gap-3">
                     <div className="min-w-0">
-                      <h3 className="text-sm font-bold text-on-surface truncate">{application.candidateName ?? "Candidate"}</h3>
-                      <p className="text-xs text-on-surface-variant truncate">{application.jobTitle ?? "Job"} - {application.companyName ?? "Company"}</p>
+                      <h3 className="text-sm font-bold text-on-surface truncate">{application.candidateName ?? "Ứng viên"}</h3>
+                      <p className="text-xs text-on-surface-variant truncate">{application.jobTitle ?? "Tin tuyển dụng"} - {application.companyName ?? "Công ty"}</p>
                     </div>
                     {application.aiScore != null && (
                       <span className="rounded-full bg-secondary/10 px-2.5 py-1 text-[10px] font-black text-secondary">
@@ -326,7 +427,7 @@ export default function AdminDashboardPage() {
                   </div>
                   <div className="mt-4 flex items-center gap-2 text-xs font-medium text-on-surface-variant">
                     <CheckCircle2 className="h-4 w-4 text-primary" />
-                    Applied {formatDate(application.appliedAt)}
+                    Nộp ngày {formatDate(application.appliedAt)}
                   </div>
                 </div>
               ))
