@@ -175,6 +175,21 @@ export function getJobRecommendations(topK = 10, cvId?: string): Promise<JobReco
   return request<JobRecommendationResponse[]>(`/api/jobs/recommendations?${params.toString()}`);
 }
 
+export type JobFtsSearchResponse = {
+  job: JobResponse;
+  rank?: number | null;
+};
+
+export function searchJobsFts(query: string, limit = 10, status?: string): Promise<JobFtsSearchResponse[]> {
+  const params = new URLSearchParams();
+  params.set("q", query);
+  params.set("limit", String(limit));
+  if (status) {
+    params.set("status", status);
+  }
+  return request<JobFtsSearchResponse[]>(`/api/search/fts/jobs?${params.toString()}`);
+}
+
 export function createJob(payload: JobPayload): Promise<JobResponse> {
   return request<JobResponse>("/api/jobs", {
     method: "POST",

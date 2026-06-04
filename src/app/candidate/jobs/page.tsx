@@ -6,6 +6,7 @@ import Link from "next/link";
 import {
   ApiError,
   getJobRecommendations,
+  searchJobsFts,
   type JobRecommendationResponse,
   type JobResponse,
 } from "@/lib/api/jobs";
@@ -45,30 +46,57 @@ export default function CandidateJobsPage() {
   const [loading, setLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
+  const [searchQueryInput, setSearchQueryInput] = useState("");
+  const [searchQuery, setSearchQuery] = useState("");
+
   useEffect(() => {
     let active = true;
     setLoading(true);
-    getJobRecommendations(12)
-      .then((data) => {
-        if (!active) return;
-        setJobs(data);
-        setErrorMessage(null);
-      })
-      .catch((error: unknown) => {
-        if (!active) return;
-        const message = error instanceof ApiError ? error.message : "Could not load jobs.";
-        setErrorMessage(message);
-        setJobs([]);
-      })
-      .finally(() => {
-        if (!active) return;
-        setLoading(false);
-      });
+
+    if (!searchQuery || searchQuery.trim() === "") {
+      getJobRecommendations(12)
+        .then((data) => {
+          if (!active) return;
+          setJobs(data);
+          setErrorMessage(null);
+        })
+        .catch((error: unknown) => {
+          if (!active) return;
+          const message = error instanceof ApiError ? error.message : "Could not load jobs.";
+          setErrorMessage(message);
+          setJobs([]);
+        })
+        .finally(() => {
+          if (!active) return;
+          setLoading(false);
+        });
+    } else {
+      searchJobsFts(searchQuery.trim(), 12, "PUBLISHED")
+        .then((data) => {
+          if (!active) return;
+          const mapped = data.map(item => ({
+            job: item.job,
+            matchScore: item.rank ? Math.round(item.rank * 100) : null
+          }));
+          setJobs(mapped);
+          setErrorMessage(null);
+        })
+        .catch((error: unknown) => {
+          if (!active) return;
+          const message = error instanceof ApiError ? error.message : "Could not search jobs.";
+          setErrorMessage(message);
+          setJobs([]);
+        })
+        .finally(() => {
+          if (!active) return;
+          setLoading(false);
+        });
+    }
 
     return () => {
       active = false;
     };
-  }, []);
+  }, [searchQuery]);
 
   const totalJobs = jobs.length;
   const jobList = useMemo(() => jobs, [jobs]);
@@ -110,8 +138,15 @@ export default function CandidateJobsPage() {
               <div className="relative">
                 <input 
                   className="w-full bg-surface-container-high border-none rounded-xl py-3 pl-11 focus:ring-2 focus:ring-primary/40 transition-all placeholder:text-outline-variant outline-none" 
-                  placeholder="Vị trí, kỹ năng..." 
+                  placeholder="Vị trí, kỹ năng (Nhấn Enter để tìm)..." 
                   type="text"
+                  value={searchQueryInput}
+                  onChange={(e) => setSearchQueryInput(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      setSearchQuery(searchQueryInput);
+                    }
+                  }}
                 />
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant w-5 h-5" />
               </div>
