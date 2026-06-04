@@ -172,9 +172,12 @@ export default function PipelineKanban() {
                             </div>
                           </div>
                           {application.aiScore != null && (
-                            <span className="bg-blue-50 text-blue-700 text-[10px] font-black px-2 py-1 rounded-lg shrink-0">
-                              {Math.round(application.aiScore)}%
-                            </span>
+                            <div className="flex flex-col items-end gap-1">
+                              <span className="text-[9px] font-black uppercase text-primary tracking-widest">AI Match</span>
+                              <span className="signature-gradient text-white text-[10px] font-black px-2 py-0.5 rounded-full shadow-sm">
+                                {Math.round(application.aiScore)}%
+                              </span>
+                            </div>
                           )}
                         </div>
 

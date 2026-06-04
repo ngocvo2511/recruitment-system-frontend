@@ -497,21 +497,75 @@ export default function JobDetailPage() {
         )}
 
         {/* AI Insight Snippet */}
-          <div className="bg-primary-container/20 border border-primary/20 rounded-2xl p-6 mb-10 flex gap-4">
-            <div className="bg-primary text-white w-12 h-12 rounded-full flex items-center justify-center shrink-0">
-              <Zap className="w-6 h-6" />
+        <div className="glass-card rounded-3xl p-8 mb-10 border border-primary/20 relative overflow-hidden">
+          <div className="absolute top-0 right-0 w-64 h-64 bg-primary/10 rounded-full blur-[80px] -z-10 pointer-events-none"></div>
+          <div className="flex flex-col md:flex-row gap-8 items-center relative z-10">
+            <div className="relative shrink-0 flex items-center justify-center">
+              <svg className="w-32 h-32 transform -rotate-90">
+                <circle cx="64" cy="64" r="56" stroke="currentColor" strokeWidth="8" fill="transparent" className="text-surface-container-highest opacity-50" />
+                <circle 
+                  cx="64" 
+                  cy="64" 
+                  r="56" 
+                  stroke="currentColor" 
+                  strokeWidth="8" 
+                  fill="transparent" 
+                  strokeDasharray="351.8" 
+                  strokeDashoffset={match?.fitScore ? 351.8 - (351.8 * match.fitScore) / 100 : 351.8} 
+                  className="text-primary transition-all duration-1000 ease-out" 
+                  strokeLinecap="round" 
+                />
+              </svg>
+              <div className="absolute inset-0 flex flex-col items-center justify-center">
+                <span className="text-3xl font-black text-on-surface">{match?.fitScore ?? 0}%</span>
+                <span className="text-[10px] font-bold uppercase tracking-widest text-primary">Phù hợp</span>
+              </div>
             </div>
-            <div>
-              <h3 className="font-bold text-primary mb-1 text-lg">
-                {match?.fitScore != null ? `${match.fitScore}% phù hợp AI` : "Chưa có đánh giá AI"}
-              </h3>
-              <p className="text-on-surface-variant leading-relaxed text-sm">
-                {match?.fitScore != null
-                  ? "Mức độ phù hợp được tính từ kỹ năng, mô tả công việc và yêu cầu."
-                  : "Chưa đủ dữ liệu để tính mức độ phù hợp. Vui lòng hoàn tất CV và thử lại."}
+            
+            <div className="flex-1 w-full space-y-4">
+              <h3 className="font-bold text-xl text-on-surface">Phân tích mức độ phù hợp AI</h3>
+              <p className="text-sm text-on-surface-variant leading-relaxed">
+                Thuật toán Hybrid Matching đánh giá CV của bạn dựa trên 3 tiêu chí cốt lõi: Kỹ năng chuyên môn, kinh nghiệm làm việc và yêu cầu cụ thể của vị trí này.
               </p>
+              
+              {match ? (
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
+                  <div className="bg-surface-container-low p-4 rounded-2xl border border-outline-variant/20 hover:border-primary/20 transition-colors">
+                    <div className="flex justify-between items-center mb-2">
+                      <span className="text-xs font-bold uppercase tracking-wider text-on-surface-variant">Kỹ năng</span>
+                      <span className="text-sm font-black text-secondary">{match.skillsScore ?? 0}%</span>
+                    </div>
+                    <div className="h-1.5 w-full bg-surface-container-high rounded-full overflow-hidden">
+                      <div className="h-full signature-gradient transition-all duration-1000" style={{ width: `${match.skillsScore ?? 0}%` }}></div>
+                    </div>
+                  </div>
+                  <div className="bg-surface-container-low p-4 rounded-2xl border border-outline-variant/20 hover:border-primary/20 transition-colors">
+                    <div className="flex justify-between items-center mb-2">
+                      <span className="text-xs font-bold uppercase tracking-wider text-on-surface-variant">Kinh nghiệm</span>
+                      <span className="text-sm font-black text-secondary">{match.descriptionScore ?? 0}%</span>
+                    </div>
+                    <div className="h-1.5 w-full bg-surface-container-high rounded-full overflow-hidden">
+                      <div className="h-full signature-gradient transition-all duration-1000" style={{ width: `${match.descriptionScore ?? 0}%` }}></div>
+                    </div>
+                  </div>
+                  <div className="bg-surface-container-low p-4 rounded-2xl border border-outline-variant/20 hover:border-primary/20 transition-colors">
+                    <div className="flex justify-between items-center mb-2">
+                      <span className="text-xs font-bold uppercase tracking-wider text-on-surface-variant">Yêu cầu</span>
+                      <span className="text-sm font-black text-secondary">{match.requirementsScore ?? 0}%</span>
+                    </div>
+                    <div className="h-1.5 w-full bg-surface-container-high rounded-full overflow-hidden">
+                      <div className="h-full signature-gradient transition-all duration-1000" style={{ width: `${match.requirementsScore ?? 0}%` }}></div>
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <div className="mt-4 p-4 rounded-2xl border border-dashed border-outline-variant/30 text-center text-sm text-on-surface-variant">
+                  Chưa có đánh giá độ phù hợp. Vui lòng cập nhật CV để AI có thể phân tích.
+                </div>
+              )}
             </div>
           </div>
+        </div>
 
         {/* Description */}
         <div className="space-y-10">

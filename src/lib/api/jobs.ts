@@ -69,6 +69,24 @@ export type JobRecommendationResponse = {
   matchScore?: number | null;
 };
 
+export type CvItemResponse = {
+  id: string;
+  cvName: string;
+  uploadedAt: string;
+  isDefault?: boolean;
+  aiStatus?: "PENDING" | "COMPLETED" | "FAILED";
+};
+
+export type CvRecommendationResponse = {
+  cv: CvItemResponse;
+  matchScore?: number | null;
+  candidateId?: string | null;
+  candidateName?: string | null;
+  candidateHeadline?: string | null;
+  candidateAvatar?: string | null;
+};
+
+
 type ApiErrorShape = {
   code?: number;
   message?: string;
@@ -157,9 +175,30 @@ export function getJobRecommendations(topK = 10, cvId?: string): Promise<JobReco
   return request<JobRecommendationResponse[]>(`/api/jobs/recommendations?${params.toString()}`);
 }
 
+export type JobFtsSearchResponse = {
+  job: JobResponse;
+  rank?: number | null;
+};
+
+export function searchJobsFts(query: string, limit = 10, status?: string): Promise<JobFtsSearchResponse[]> {
+  const params = new URLSearchParams();
+  params.set("q", query);
+  params.set("limit", String(limit));
+  if (status) {
+    params.set("status", status);
+  }
+  return request<JobFtsSearchResponse[]>(`/api/search/fts/jobs?${params.toString()}`);
+}
+
 export function createJob(payload: JobPayload): Promise<JobResponse> {
   return request<JobResponse>("/api/jobs", {
     method: "POST",
     body: JSON.stringify(payload),
   });
+}
+
+export function getJobMatches(jobId: string, topK = 10): Promise<CvRecommendationResponse[]> {
+  const params = new URLSearchParams();
+  params.set("topK", String(topK));
+  return request<CvRecommendationResponse[]>(`/api/jobs/${jobId}/matches?${params.toString()}`);
 }

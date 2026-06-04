@@ -219,11 +219,14 @@ export default function CandidateDatabasePage() {
                         {matchScore == null ? (
                           <span className="text-sm text-on-surface-variant">--</span>
                         ) : (
-                          <div className="flex items-center gap-3">
-                            <div className="w-16 h-2 bg-surface-container-highest rounded-full overflow-hidden">
+                          <div className="flex flex-col gap-1.5">
+                            <div className="flex items-center gap-2">
+                              <span className="px-2 py-0.5 bg-primary/10 text-primary text-[9px] font-black uppercase rounded-sm border border-primary/20">AI Match</span>
+                              <span className="text-sm font-black text-secondary">{matchScore}%</span>
+                            </div>
+                            <div className="w-20 h-1.5 bg-surface-container-highest rounded-full overflow-hidden">
                               <div className="h-full signature-gradient" style={{ width: `${matchScore}%` }} />
                             </div>
-                            <span className="text-sm font-extrabold text-secondary">{matchScore}%</span>
                           </div>
                         )}
                       </td>
