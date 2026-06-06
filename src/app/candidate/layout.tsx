@@ -1,11 +1,26 @@
+"use client";
+
 import Link from "next/link";
-import { Bell, Search } from "lucide-react";
+import { Bell } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { useEffect } from "react";
 
 export default function CandidateLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
+  const router = useRouter();
+
+  useEffect(() => {
+    const token = window.localStorage.getItem("token");
+    const accountType = window.localStorage.getItem("accountType");
+
+    if (!token || accountType !== "candidate") {
+      router.replace("/login?role=candidate");
+    }
+  }, [router]);
+
   return (
     <div className="bg-surface font-body text-on-surface selection:bg-primary/20 min-h-screen">
       {/* Ambient Background Decorations */}

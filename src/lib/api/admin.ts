@@ -139,6 +139,17 @@ export type AdminJobResponse = {
   publishedAt?: string | null;
   closedAt?: string | null;
   applicationCount: number;
+  requirementSections?: Array<{
+    id?: string | null;
+    title: string;
+    sectionType?: string | null;
+    displayOrder?: number | null;
+    items?: Array<{
+      id?: string | null;
+      content: string;
+      displayOrder?: number | null;
+    }>;
+  }>;
 };
 
 export type AdminAnalyticsOverviewResponse = {
@@ -175,6 +186,17 @@ export type AdminAuditLogResponse = {
   targetId: string;
   reason?: string | null;
   createdAt?: string | null;
+};
+
+export type AdminSettingsResponse = {
+  autoApproveJobsFromVerifiedCompanies: boolean;
+  requireAdminApprovalForAllJobs: boolean;
+  companyVerificationMode: "MANUAL" | "AUTO_APPROVE";
+  aiMatchingEnabled: boolean;
+  notifyAdminsForCompanyReview: boolean;
+  notifyAdminsForJobReview: boolean;
+  notifyRecruitersForModeration: boolean;
+  notifyCompanyOwnersForModeration: boolean;
 };
 
 type ApiErrorShape = {
@@ -270,6 +292,10 @@ export function getAdminUsers(params: {
   return request<AdminPageResponse<AdminUserResponse>>(`/api/admin/users?${search.toString()}`);
 }
 
+export function getAdminUser(userId: string): Promise<AdminUserResponse> {
+  return request<AdminUserResponse>(`/api/admin/users/${userId}`);
+}
+
 export function enableAdminUser(userId: string, reason?: string): Promise<AdminUserResponse> {
   return request<AdminUserResponse>(`/api/admin/users/${userId}/enable`, moderationBody(reason));
 }
@@ -290,6 +316,10 @@ export function getAdminCompanies(params: {
   if (params.keyword) search.set("keyword", params.keyword);
   if (params.status && params.status !== "ALL") search.set("status", params.status);
   return request<AdminPageResponse<AdminCompanyResponse>>(`/api/admin/companies?${search.toString()}`);
+}
+
+export function getAdminCompany(companyId: string): Promise<AdminCompanyResponse> {
+  return request<AdminCompanyResponse>(`/api/admin/companies/${companyId}`);
 }
 
 export function verifyAdminCompany(companyId: string, reason?: string): Promise<AdminCompanyResponse> {
@@ -322,6 +352,10 @@ export function getAdminJobs(params: {
   if (params.fromDate) search.set("fromDate", params.fromDate);
   if (params.toDate) search.set("toDate", params.toDate);
   return request<AdminPageResponse<AdminJobResponse>>(`/api/admin/jobs?${search.toString()}`);
+}
+
+export function getAdminJob(jobId: string): Promise<AdminJobResponse> {
+  return request<AdminJobResponse>(`/api/admin/jobs/${jobId}`);
 }
 
 export function approveAdminJob(jobId: string, reason?: string): Promise<AdminJobResponse> {
@@ -375,4 +409,15 @@ export function getAdminAuditLogs(params: {
   if (params.fromDate) search.set("fromDate", params.fromDate);
   if (params.toDate) search.set("toDate", params.toDate);
   return request<AdminPageResponse<AdminAuditLogResponse>>(`/api/admin/audit-logs?${search.toString()}`);
+}
+
+export function getAdminSettings(): Promise<AdminSettingsResponse> {
+  return request<AdminSettingsResponse>("/api/admin/settings");
+}
+
+export function updateAdminSettings(settings: Partial<AdminSettingsResponse>): Promise<AdminSettingsResponse> {
+  return request<AdminSettingsResponse>("/api/admin/settings", {
+    method: "PATCH",
+    body: JSON.stringify(settings),
+  });
 }
