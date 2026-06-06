@@ -4,7 +4,6 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect } from "react";
 import {
-  Activity,
   Bell,
   Briefcase,
   FileText,
@@ -12,6 +11,7 @@ import {
   LayoutDashboard,
   LogOut,
   Search,
+  ScrollText,
   Settings,
   ShieldCheck,
   UserCircle,
@@ -23,6 +23,7 @@ const navItems = [
   { href: "/admin/users", label: "Người dùng", icon: Users },
   { href: "/admin/jobs", label: "Tin tuyển dụng", icon: Briefcase },
   { href: "/admin/company-moderation", label: "Kiểm duyệt công ty", icon: ShieldCheck },
+  { href: "/admin/audit-logs", label: "Nhật ký admin", icon: ScrollText },
   { href: "/admin/settings", label: "Cài đặt hệ thống", icon: Settings },
 ];
 

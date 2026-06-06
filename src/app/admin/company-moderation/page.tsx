@@ -101,10 +101,10 @@ export default function CompanyModerationPage() {
     try {
       const updated =
         action === "verify"
-          ? await verifyAdminCompany(company.id)
+          ? await verifyAdminCompany(company.id, "Admin xác minh hồ sơ công ty.")
           : action === "reject"
-            ? await rejectAdminCompany(company.id)
-            : await requestMoreInfoAdminCompany(company.id);
+            ? await rejectAdminCompany(company.id, "Admin từ chối hồ sơ công ty.")
+            : await requestMoreInfoAdminCompany(company.id, "Admin yêu cầu bổ sung thông tin xác minh công ty.");
       updateCompanyInList(updated);
     } catch (error) {
       setErrorMessage(error instanceof ApiError ? error.message : "Không thể cập nhật trạng thái công ty.");

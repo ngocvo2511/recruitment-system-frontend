@@ -166,6 +166,17 @@ export type AdminAnalyticsOverviewResponse = {
   jobsByDay: Array<{ date: string; count: number }>;
 };
 
+export type AdminAuditLogResponse = {
+  id: string;
+  adminUserId?: string | null;
+  adminEmail?: string | null;
+  action: string;
+  targetType: string;
+  targetId: string;
+  reason?: string | null;
+  createdAt?: string | null;
+};
+
 type ApiErrorShape = {
   code?: number;
   message?: string;
@@ -236,6 +247,13 @@ export function getAdminDashboard(): Promise<AdminDashboardResponse> {
   return request<AdminDashboardResponse>("/api/admin/dashboard");
 }
 
+function moderationBody(reason?: string): RequestInit {
+  return {
+    method: "PATCH",
+    body: JSON.stringify({ reason: reason ?? "" }),
+  };
+}
+
 export function getAdminUsers(params: {
   page?: number;
   size?: number;
@@ -252,16 +270,12 @@ export function getAdminUsers(params: {
   return request<AdminPageResponse<AdminUserResponse>>(`/api/admin/users?${search.toString()}`);
 }
 
-export function enableAdminUser(userId: string): Promise<AdminUserResponse> {
-  return request<AdminUserResponse>(`/api/admin/users/${userId}/enable`, {
-    method: "PATCH",
-  });
+export function enableAdminUser(userId: string, reason?: string): Promise<AdminUserResponse> {
+  return request<AdminUserResponse>(`/api/admin/users/${userId}/enable`, moderationBody(reason));
 }
 
-export function disableAdminUser(userId: string): Promise<AdminUserResponse> {
-  return request<AdminUserResponse>(`/api/admin/users/${userId}/disable`, {
-    method: "PATCH",
-  });
+export function disableAdminUser(userId: string, reason?: string): Promise<AdminUserResponse> {
+  return request<AdminUserResponse>(`/api/admin/users/${userId}/disable`, moderationBody(reason));
 }
 
 export function getAdminCompanies(params: {
@@ -278,22 +292,16 @@ export function getAdminCompanies(params: {
   return request<AdminPageResponse<AdminCompanyResponse>>(`/api/admin/companies?${search.toString()}`);
 }
 
-export function verifyAdminCompany(companyId: string): Promise<AdminCompanyResponse> {
-  return request<AdminCompanyResponse>(`/api/admin/companies/${companyId}/verify`, {
-    method: "PATCH",
-  });
+export function verifyAdminCompany(companyId: string, reason?: string): Promise<AdminCompanyResponse> {
+  return request<AdminCompanyResponse>(`/api/admin/companies/${companyId}/verify`, moderationBody(reason));
 }
 
-export function rejectAdminCompany(companyId: string): Promise<AdminCompanyResponse> {
-  return request<AdminCompanyResponse>(`/api/admin/companies/${companyId}/reject`, {
-    method: "PATCH",
-  });
+export function rejectAdminCompany(companyId: string, reason?: string): Promise<AdminCompanyResponse> {
+  return request<AdminCompanyResponse>(`/api/admin/companies/${companyId}/reject`, moderationBody(reason));
 }
 
-export function requestMoreInfoAdminCompany(companyId: string): Promise<AdminCompanyResponse> {
-  return request<AdminCompanyResponse>(`/api/admin/companies/${companyId}/request-more-info`, {
-    method: "PATCH",
-  });
+export function requestMoreInfoAdminCompany(companyId: string, reason?: string): Promise<AdminCompanyResponse> {
+  return request<AdminCompanyResponse>(`/api/admin/companies/${companyId}/request-more-info`, moderationBody(reason));
 }
 
 export function getAdminJobs(params: {
@@ -316,26 +324,55 @@ export function getAdminJobs(params: {
   return request<AdminPageResponse<AdminJobResponse>>(`/api/admin/jobs?${search.toString()}`);
 }
 
-export function approveAdminJob(jobId: string): Promise<AdminJobResponse> {
-  return request<AdminJobResponse>(`/api/admin/jobs/${jobId}/approve`, { method: "PATCH" });
+export function approveAdminJob(jobId: string, reason?: string): Promise<AdminJobResponse> {
+  return request<AdminJobResponse>(`/api/admin/jobs/${jobId}/approve`, moderationBody(reason));
 }
 
-export function rejectAdminJob(jobId: string): Promise<AdminJobResponse> {
-  return request<AdminJobResponse>(`/api/admin/jobs/${jobId}/reject`, { method: "PATCH" });
+export function rejectAdminJob(jobId: string, reason?: string): Promise<AdminJobResponse> {
+  return request<AdminJobResponse>(`/api/admin/jobs/${jobId}/reject`, moderationBody(reason));
 }
 
-export function flagAdminJob(jobId: string): Promise<AdminJobResponse> {
-  return request<AdminJobResponse>(`/api/admin/jobs/${jobId}/flag`, { method: "PATCH" });
+export function flagAdminJob(jobId: string, reason?: string): Promise<AdminJobResponse> {
+  return request<AdminJobResponse>(`/api/admin/jobs/${jobId}/flag`, moderationBody(reason));
 }
 
-export function unflagAdminJob(jobId: string): Promise<AdminJobResponse> {
-  return request<AdminJobResponse>(`/api/admin/jobs/${jobId}/unflag`, { method: "PATCH" });
+export function unflagAdminJob(jobId: string, reason?: string): Promise<AdminJobResponse> {
+  return request<AdminJobResponse>(`/api/admin/jobs/${jobId}/unflag`, moderationBody(reason));
 }
 
-export function closeAdminJob(jobId: string): Promise<AdminJobResponse> {
-  return request<AdminJobResponse>(`/api/admin/jobs/${jobId}/close`, { method: "PATCH" });
+export function closeAdminJob(jobId: string, reason?: string): Promise<AdminJobResponse> {
+  return request<AdminJobResponse>(`/api/admin/jobs/${jobId}/close`, moderationBody(reason));
 }
 
-export function getAdminAnalyticsOverview(): Promise<AdminAnalyticsOverviewResponse> {
-  return request<AdminAnalyticsOverviewResponse>("/api/admin/analytics/overview");
+export function getAdminAnalyticsOverview(params: {
+  fromDate?: string;
+  toDate?: string;
+} = {}): Promise<AdminAnalyticsOverviewResponse> {
+  const search = new URLSearchParams();
+  if (params.fromDate) search.set("fromDate", params.fromDate);
+  if (params.toDate) search.set("toDate", params.toDate);
+  const suffix = search.toString() ? `?${search.toString()}` : "";
+  return request<AdminAnalyticsOverviewResponse>(`/api/admin/analytics/overview${suffix}`);
+}
+
+export function getAdminAuditLogs(params: {
+  page?: number;
+  size?: number;
+  adminUserId?: string;
+  action?: string;
+  targetType?: string;
+  targetId?: string;
+  fromDate?: string;
+  toDate?: string;
+} = {}): Promise<AdminPageResponse<AdminAuditLogResponse>> {
+  const search = new URLSearchParams();
+  search.set("page", String(params.page ?? 0));
+  search.set("size", String(params.size ?? 20));
+  if (params.adminUserId) search.set("adminUserId", params.adminUserId);
+  if (params.action) search.set("action", params.action);
+  if (params.targetType) search.set("targetType", params.targetType);
+  if (params.targetId) search.set("targetId", params.targetId);
+  if (params.fromDate) search.set("fromDate", params.fromDate);
+  if (params.toDate) search.set("toDate", params.toDate);
+  return request<AdminPageResponse<AdminAuditLogResponse>>(`/api/admin/audit-logs?${search.toString()}`);
 }

@@ -109,14 +109,14 @@ export default function AdminJobManagementPage() {
     try {
       const updated =
         action === "approve"
-          ? await approveAdminJob(job.id)
+          ? await approveAdminJob(job.id, "Admin duyệt tin tuyển dụng.")
           : action === "reject"
-            ? await rejectAdminJob(job.id)
+            ? await rejectAdminJob(job.id, "Admin từ chối tin tuyển dụng.")
             : action === "flag"
-              ? await flagAdminJob(job.id)
+              ? await flagAdminJob(job.id, "Admin gắn cờ tin tuyển dụng để kiểm tra.")
               : action === "unflag"
-                ? await unflagAdminJob(job.id)
-                : await closeAdminJob(job.id);
+                ? await unflagAdminJob(job.id, "Admin bỏ gắn cờ tin tuyển dụng.")
+                : await closeAdminJob(job.id, "Admin đóng tin tuyển dụng.");
       updateJobInList(updated);
     } catch (error) {
       setErrorMessage(error instanceof ApiError ? error.message : "Không thể cập nhật trạng thái tin tuyển dụng.");

@@ -35,6 +35,10 @@ function formatDate(value?: string | null): string {
   return date.toLocaleDateString("vi-VN");
 }
 
+function toDateInputValue(date: Date): string {
+  return date.toISOString().slice(0, 10);
+}
+
 function renderActivityIcon(type: string) {
   if (type === "COMPANY_VERIFICATION") return <UserPlus className="w-4 h-4" />;
   if (type === "JOB_APPROVAL") return <Flag className="w-4 h-4" />;
@@ -71,6 +75,12 @@ export default function AdminDashboardPage() {
   const [analytics, setAnalytics] = useState<AdminAnalyticsOverviewResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [analyticsFromDate, setAnalyticsFromDate] = useState(() => {
+    const date = new Date();
+    date.setDate(date.getDate() - 29);
+    return toDateInputValue(date);
+  });
+  const [analyticsToDate, setAnalyticsToDate] = useState(() => toDateInputValue(new Date()));
 
   useEffect(() => {
     let active = true;
@@ -80,7 +90,10 @@ export default function AdminDashboardPage() {
       try {
         const [dashboardData, analyticsData] = await Promise.all([
           getAdminDashboard(),
-          getAdminAnalyticsOverview(),
+          getAdminAnalyticsOverview({
+            fromDate: analyticsFromDate,
+            toDate: analyticsToDate,
+          }),
         ]);
         if (active) {
           setDashboard(dashboardData);
@@ -98,7 +111,7 @@ export default function AdminDashboardPage() {
     return () => {
       active = false;
     };
-  }, []);
+  }, [analyticsFromDate, analyticsToDate]);
 
   const metrics = dashboard?.metrics;
   const chartValues = useMemo(() => {
@@ -324,6 +337,26 @@ export default function AdminDashboardPage() {
                 <p className="text-sm text-on-surface-variant font-medium">
                   Số liệu thật từ đơn ứng tuyển, tin tuyển dụng và trạng thái pipeline.
                 </p>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <label className="text-xs font-bold text-on-surface-variant">
+                  Từ ngày
+                  <input
+                    type="date"
+                    value={analyticsFromDate}
+                    onChange={(event) => setAnalyticsFromDate(event.target.value)}
+                    className="mt-1 block w-full rounded-xl border border-outline-variant/10 bg-surface-container-lowest px-3 py-2 text-sm text-on-surface outline-none focus:ring-2 focus:ring-primary/20"
+                  />
+                </label>
+                <label className="text-xs font-bold text-on-surface-variant">
+                  Đến ngày
+                  <input
+                    type="date"
+                    value={analyticsToDate}
+                    onChange={(event) => setAnalyticsToDate(event.target.value)}
+                    className="mt-1 block w-full rounded-xl border border-outline-variant/10 bg-surface-container-lowest px-3 py-2 text-sm text-on-surface outline-none focus:ring-2 focus:ring-primary/20"
+                  />
+                </label>
               </div>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                 <div className="rounded-2xl bg-surface-container-low/60 px-4 py-3">

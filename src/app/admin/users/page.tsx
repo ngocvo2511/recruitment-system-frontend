@@ -79,7 +79,9 @@ export default function AdminUsersPage() {
     setUpdatingId(user.id);
     setErrorMessage(null);
     try {
-      const updated = user.enabled ? await disableAdminUser(user.id) : await enableAdminUser(user.id);
+      const updated = user.enabled
+        ? await disableAdminUser(user.id, "Admin khóa tài khoản từ trang quản lý người dùng.")
+        : await enableAdminUser(user.id, "Admin mở khóa tài khoản từ trang quản lý người dùng.");
       updateUserInList(updated);
     } catch (error) {
       setErrorMessage(error instanceof ApiError ? error.message : "Không thể cập nhật trạng thái người dùng.");
