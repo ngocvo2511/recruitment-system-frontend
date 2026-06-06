@@ -211,7 +211,7 @@ export default function AISuggestionsPage() {
                     
                     <div className="flex gap-4">
                       {topMatch.candidateId ? (
-                        <Link href={`/recruiter/candidates/${topMatch.candidateId}`} className="flex-1 py-4 rounded-2xl signature-gradient text-white font-bold hover:opacity-90 transition-all flex items-center justify-center gap-2 shadow-lg shadow-primary/20">
+                        <Link href={`/recruiter/candidates/${topMatch.candidateId}?cvId=${topMatch.cv.id}`} className="flex-1 py-4 rounded-2xl signature-gradient text-white font-bold hover:opacity-90 transition-all flex items-center justify-center gap-2 shadow-lg shadow-primary/20">
                           View Profile
                           <ArrowRight className="w-5 h-5" />
                         </Link>
@@ -275,7 +275,7 @@ export default function AISuggestionsPage() {
                 </div>
                 <p className="text-sm text-on-surface-variant mb-6 line-clamp-2">Strong candidate showing excellent alignment with core requirements.</p>
                 {secondaryMatch.candidateId ? (
-                  <Link href={`/recruiter/candidates/${secondaryMatch.candidateId}`} className="w-full py-3 rounded-xl bg-surface-container-high text-on-surface font-bold text-sm hover:bg-primary hover:text-white transition-all block text-center">
+                  <Link href={`/recruiter/candidates/${secondaryMatch.candidateId}?cvId=${secondaryMatch.cv.id}`} className="w-full py-3 rounded-xl bg-surface-container-high text-on-surface font-bold text-sm hover:bg-primary hover:text-white transition-all block text-center">
                     View Details
                   </Link>
                 ) : (
@@ -311,7 +311,7 @@ export default function AISuggestionsPage() {
                     <p className="text-sm text-on-surface-variant leading-relaxed line-clamp-2">Matches well with the technical specifications outlined in the job description.</p>
                   </div>
                   {match.candidateId ? (
-                    <Link href={`/recruiter/candidates/${match.candidateId}`} className="w-full py-3 rounded-xl border-2 border-primary/10 text-primary font-bold text-sm group-hover:bg-primary group-hover:text-white transition-all block text-center relative z-10">
+                    <Link href={`/recruiter/candidates/${match.candidateId}?cvId=${match.cv.id}`} className="w-full py-3 rounded-xl border-2 border-primary/10 text-primary font-bold text-sm group-hover:bg-primary group-hover:text-white transition-all block text-center relative z-10">
                       Explore Profile
                     </Link>
                   ) : (

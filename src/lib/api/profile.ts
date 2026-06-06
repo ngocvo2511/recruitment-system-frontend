@@ -101,6 +101,10 @@ export function getCandidateProfile(): Promise<CandidateProfileResponse> {
   return request<CandidateProfileResponse>("/api/profile/candidate");
 }
 
+export function getPublicCandidateProfile(candidateId: string): Promise<CandidateProfileResponse> {
+  return request<CandidateProfileResponse>(`/api/profile/candidates/${candidateId}`);
+}
+
 export function createCandidateProfile(
   payload: CandidateProfileCreateRequest,
 ): Promise<CandidateProfileResponse> {
