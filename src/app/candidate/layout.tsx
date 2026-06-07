@@ -2,10 +2,18 @@
 
 import Link from "next/link";
 import { Bell } from "lucide-react";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { BRAND_NAME } from "@/lib/brand";
 import { getHomePathForAccount, getStoredAccountType, getStoredToken } from "@/lib/authSession";
+
+const navItems = [
+  { href: "/candidate/dashboard", label: "Tổng quan" },
+  { href: "/candidate/jobs", label: "Việc làm" },
+  { href: "/candidate/applications", label: "Đơn ứng tuyển" },
+  { href: "/candidate/cv", label: "Quản lý CV" },
+  { href: "/candidate/profile", label: "Hồ sơ" },
+];
 
 export default function CandidateLayout({
   children,
@@ -13,6 +21,7 @@ export default function CandidateLayout({
   children: React.ReactNode;
 }) {
   const router = useRouter();
+  const pathname = usePathname();
   const [isAuthorized, setIsAuthorized] = useState(false);
 
   useEffect(() => {
@@ -49,14 +58,22 @@ export default function CandidateLayout({
       <nav className="fixed top-0 w-full z-50 bg-white/60 dark:bg-slate-900/60 backdrop-blur-xl border-b border-white/10 dark:border-slate-800/50 shadow-[0_8px_32px_0_rgba(0,80,212,0.08)]">
         <div className="flex justify-between items-center w-full px-8 h-20 max-w-7xl mx-auto tracking-tight">
           <div className="flex items-center gap-12">
-            <Link href="/candidate/jobs" className="text-2xl font-black tracking-tighter bg-gradient-to-br from-blue-600 to-blue-400 bg-clip-text text-transparent">
+            <Link href="/candidate/dashboard" className="text-2xl font-black tracking-tighter bg-gradient-to-br from-blue-600 to-blue-400 bg-clip-text text-transparent">
               {BRAND_NAME}
             </Link>
             <div className="hidden md:flex gap-8 items-center">
-              <Link href="/candidate/jobs" className="text-blue-600 dark:text-blue-400 font-semibold border-b-2 border-blue-600 pb-1">Việc làm</Link>
-              <Link href="/candidate/applications" className="text-slate-600 dark:text-slate-400 hover:text-blue-500 transition-colors">Đơn ứng tuyển</Link>
-              <Link href="/candidate/cv" className="text-slate-600 dark:text-slate-400 hover:text-blue-500 transition-colors">Quản lý CV</Link>
-              <Link href="/candidate/profile" className="text-slate-600 dark:text-slate-400 hover:text-blue-500 transition-colors">Hồ sơ</Link>
+              {navItems.map((item) => {
+                const active = pathname.startsWith(item.href);
+                return (
+                  <Link
+                    key={item.href}
+                    href={item.href}
+                    className={active ? "text-blue-600 dark:text-blue-400 font-semibold border-b-2 border-blue-600 pb-1" : "text-slate-600 dark:text-slate-400 hover:text-blue-500 transition-colors"}
+                  >
+                    {item.label}
+                  </Link>
+                );
+              })}
             </div>
           </div>
           <div className="flex items-center gap-6">

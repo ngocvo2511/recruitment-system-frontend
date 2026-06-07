@@ -79,7 +79,7 @@ export function getHomePathForAccount(accountType: AccountType): string {
     return "/recruiter/dashboard";
   }
 
-  return "/candidate/jobs";
+  return "/candidate/dashboard";
 }
 
 export function clearAuthSession() {

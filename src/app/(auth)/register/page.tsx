@@ -112,7 +112,7 @@ function RegisterForm() {
       localStorage.setItem("accountType", "candidate");
       if (auth.userId) localStorage.setItem("userId", auth.userId);
       await createCandidateProfile({ fullName });
-      router.push("/candidate/jobs");
+      router.push("/candidate/dashboard");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Không thể đăng ký. Vui lòng thử lại.");
     } finally {
