@@ -137,15 +137,15 @@ export default function CandidateProfilePage() {
         openToWork,
         confirmedSkills: skills,
       });
-      addToast("success", "Profile updated successfully.");
+      addToast("success", "Cập nhật hồ sơ thành công.");
       await loadProfile();
     } catch (error) {
       if (error instanceof ApiError) {
         setErrorMessage(error.message);
         addToast("error", error.message);
       } else {
-        setErrorMessage("Could not save profile.");
-        addToast("error", "Could not save profile.");
+        setErrorMessage("Không thể lưu hồ sơ.");
+        addToast("error", "Không thể lưu hồ sơ.");
       }
     } finally {
       setSaving(false);
@@ -164,15 +164,15 @@ export default function CandidateProfilePage() {
 
     try {
       await updateOpenToWork({ openToWork: nextValue });
-      addToast("success", "Open to work updated.");
+      addToast("success", "Đã cập nhật trạng thái tìm việc.");
     } catch (error) {
       setOpenToWork((prev) => !prev);
       if (error instanceof ApiError) {
         setErrorMessage(error.message);
         addToast("error", error.message);
       } else {
-        setErrorMessage("Could not update open to work status.");
-        addToast("error", "Could not update open to work status.");
+        setErrorMessage("Không thể cập nhật trạng thái tìm việc.");
+        addToast("error", "Không thể cập nhật trạng thái tìm việc.");
       }
     } finally {
       setSavingOpenToWork(false);
@@ -187,19 +187,19 @@ export default function CandidateProfilePage() {
         <nav className="flex flex-col gap-1">
           <Link href="/candidate/profile" className="flex items-center gap-3 px-4 py-3 rounded-xl bg-primary-container/20 text-primary font-bold">
             <User className="w-5 h-5 fill-primary/20" />
-            <span>Personal Info</span>
+            <span>Thông tin cá nhân</span>
           </Link>
           <Link href="/candidate/cv" className="flex items-center gap-3 px-4 py-3 rounded-xl text-on-surface-variant hover:bg-surface-container-high transition-colors">
             <FileText className="w-5 h-5" />
-            <span className="font-medium">CV Management</span>
+            <span className="font-medium">Quản lý CV</span>
           </Link>
           <Link href="#" className="flex items-center gap-3 px-4 py-3 rounded-xl text-on-surface-variant hover:bg-surface-container-high transition-colors">
             <Lightbulb className="w-5 h-5" />
-            <span className="font-medium">AI Insights</span>
+            <span className="font-medium">Gợi ý từ AI</span>
           </Link>
           <Link href="#" className="flex items-center gap-3 px-4 py-3 rounded-xl text-on-surface-variant hover:bg-surface-container-high transition-colors">
             <Settings className="w-5 h-5" />
-            <span className="font-medium">Settings</span>
+            <span className="font-medium">Cài đặt</span>
           </Link>
         </nav>
         
@@ -208,8 +208,8 @@ export default function CandidateProfilePage() {
           <div className="absolute -right-4 -top-4 opacity-10 transform group-hover:scale-110 transition-transform duration-500">
             <Lightbulb className="w-24 h-24" />
           </div>
-          <h4 className="font-bold text-lg mb-2 relative z-10">Profile Score: 85%</h4>
-          <p className="text-white/80 text-sm mb-4 leading-relaxed relative z-10">Add a professional bio to unlock exclusive AI-matched opportunities.</p>
+          <h4 className="font-bold text-lg mb-2 relative z-10">Điểm hồ sơ: 85%</h4>
+          <p className="text-white/80 text-sm mb-4 leading-relaxed relative z-10">Thêm tiểu sử chuyên nghiệp để mở khóa các cơ hội việc làm phù hợp từ AI.</p>
           <div className="h-1.5 w-full bg-white/20 rounded-full overflow-hidden relative z-10">
             <div className="h-full bg-white w-[85%]"></div>
           </div>
@@ -228,7 +228,7 @@ export default function CandidateProfilePage() {
           {loading ? (
             <div className="rounded-2xl bg-surface-container-high/50 border border-white/40 p-6 text-sm text-on-surface-variant flex items-center gap-2">
               <LoaderCircle className="w-4 h-4 animate-spin" />
-              Loading profile...
+              Đang tải hồ sơ...
             </div>
           ) : (
             <>
@@ -249,11 +249,11 @@ export default function CandidateProfilePage() {
             </div>
             <div className="text-center md:text-left">
               <h2 className="text-3xl font-black tracking-tight mb-2 bg-gradient-to-br from-blue-700 to-purple-600 bg-clip-text text-transparent">
-                {fullName || "Your Name"}
+                {fullName || "Tên của bạn"}
               </h2>
               <p className="text-on-surface-variant font-medium flex items-center justify-center md:justify-start gap-2">
                 <Verified className="w-4 h-4 text-primary fill-primary/20" />
-                {headline || "Add your headline"}
+                {headline || "Thêm tiêu đề của bạn"}
               </p>
             </div>
           </div>
@@ -263,7 +263,7 @@ export default function CandidateProfilePage() {
             <div className="space-y-6">
               
                 <div className="group">
-                  <label className="block text-[10px] uppercase font-bold tracking-widest text-on-surface-variant mb-2 px-1">Full Name</label>
+                  <label className="block text-[10px] uppercase font-bold tracking-widest text-on-surface-variant mb-2 px-1">Họ và tên</label>
                   <div className="relative">
                     <User className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-on-surface-variant" />
                     <input
@@ -276,7 +276,7 @@ export default function CandidateProfilePage() {
                 </div>
 
                 <div className="group">
-                  <label className="block text-[10px] uppercase font-bold tracking-widest text-on-surface-variant mb-2 px-1">Headline</label>
+                  <label className="block text-[10px] uppercase font-bold tracking-widest text-on-surface-variant mb-2 px-1">Tiêu đề</label>
                   <div className="relative">
                     <Sparkles className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-on-surface-variant" />
                     <input
@@ -284,13 +284,13 @@ export default function CandidateProfilePage() {
                       type="text"
                       value={headline}
                       onChange={(event) => setHeadline(event.target.value)}
-                      placeholder="e.g. Senior Product Designer"
+                      placeholder="VD: Thiết kế Sản phẩm"
                     />
                   </div>
                 </div>
 
                 <div className="group">
-                  <label className="block text-[10px] uppercase font-bold tracking-widest text-on-surface-variant mb-2 px-1">Phone Number</label>
+                  <label className="block text-[10px] uppercase font-bold tracking-widest text-on-surface-variant mb-2 px-1">Số điện thoại</label>
                   <div className="relative">
                     <Phone className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-on-surface-variant" />
                     <input
@@ -303,10 +303,10 @@ export default function CandidateProfilePage() {
                 </div>
 
                 <div className="group">
-                  <label className="block text-[10px] uppercase font-bold tracking-widest text-on-surface-variant mb-2 px-1">Skills</label>
+                  <label className="block text-[10px] uppercase font-bold tracking-widest text-on-surface-variant mb-2 px-1">Kỹ năng</label>
                   <div className="flex flex-wrap gap-2 mb-3">
                     {skillChips.length === 0 ? (
-                      <span className="text-xs text-on-surface-variant">No skills added yet.</span>
+                      <span className="text-xs text-on-surface-variant">Chưa có kỹ năng nào.</span>
                     ) : (
                       skillChips.map((skill) => (
                         <span
@@ -331,20 +331,20 @@ export default function CandidateProfilePage() {
                       type="text"
                       value={skillInput}
                       onChange={(event) => setSkillInput(event.target.value)}
-                      placeholder="Type a skill and press Add"
+                      placeholder="Nhập kỹ năng và nhấn Thêm"
                     />
                     <button
                       type="button"
                       onClick={handleAddSkill}
                       className="px-4 py-3 rounded-xl text-xs font-bold text-white bg-primary hover:bg-primary-dim"
                     >
-                      Add
+                      Thêm
                     </button>
                   </div>
                 </div>
 
                 <div className="group">
-                  <label className="block text-[10px] uppercase font-bold tracking-widest text-on-surface-variant mb-2 px-1">Email Address</label>
+                  <label className="block text-[10px] uppercase font-bold tracking-widest text-on-surface-variant mb-2 px-1">Địa chỉ Email</label>
                   <div className="relative">
                     <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-on-surface-variant" />
                     <div className="w-full pl-12 pr-4 py-4 bg-surface-container-high/50 border border-white/60 rounded-xl text-on-surface font-medium">
@@ -359,9 +359,9 @@ export default function CandidateProfilePage() {
             <div className="flex flex-col justify-between">
                 <div className="bg-surface-container-high/30 rounded-2xl p-6 border border-white/60 shadow-sm space-y-5">
                   <div>
-                    <h5 className="text-sm font-bold text-on-surface mb-2">Open to Work</h5>
+                    <h5 className="text-sm font-bold text-on-surface mb-2">Sẵn sàng làm việc</h5>
                     <p className="text-sm text-on-surface-variant leading-relaxed">
-                      Let recruiters know you are actively exploring new opportunities.
+                      Cho nhà tuyển dụng biết bạn đang tích cực tìm kiếm cơ hội mới.
                     </p>
                   </div>
                   <button
@@ -375,7 +375,7 @@ export default function CandidateProfilePage() {
                     }`}
                   >
                     <span className="text-xs font-bold uppercase tracking-widest">
-                      {openToWork ? "Actively Looking" : "Not Looking"}
+                      {openToWork ? "Đang tìm việc" : "Chưa có nhu cầu"}
                     </span>
                     <span
                       className={`w-11 h-6 rounded-full relative transition-colors ${
@@ -403,7 +403,7 @@ export default function CandidateProfilePage() {
                   disabled={saving || !hasChanges}
                 >
                   {saving && <LoaderCircle className="w-4 h-4 animate-spin" />}
-                  Save Changes
+                  Lưu thay đổi
                 </button>
               </div>
             </div>
@@ -417,29 +417,29 @@ export default function CandidateProfilePage() {
           
           <div className="md:col-span-2 glass-card rounded-[1.5rem] p-6 shadow-sm border border-white/20">
             <div className="flex justify-between items-center mb-6">
-              <h3 className="font-bold text-lg">Quick Access</h3>
+              <h3 className="font-bold text-lg">Truy cập nhanh</h3>
               <TrendingUp className="text-primary w-5 h-5" />
             </div>
             
             <div className="grid grid-cols-2 gap-4">
               <div className="p-4 rounded-xl bg-blue-50/50 hover:bg-blue-100/50 transition-all cursor-pointer border border-blue-100/50">
                 <History className="text-blue-600 mb-2 w-6 h-6" />
-                <div className="font-bold text-sm text-blue-950">Recent Views</div>
-                <div className="text-[10px] uppercase tracking-wider text-blue-400 font-bold mt-1">12 Companies</div>
+                <div className="font-bold text-sm text-blue-950">Đã xem gần đây</div>
+                <div className="text-[10px] uppercase tracking-wider text-blue-400 font-bold mt-1">12 Công ty</div>
               </div>
               
               <div className="p-4 rounded-xl bg-purple-50/50 hover:bg-purple-100/50 transition-all cursor-pointer border border-purple-100/50">
                 <Bookmark className="text-purple-600 mb-2 w-6 h-6" />
-                <div className="font-bold text-sm text-purple-950">Saved Jobs</div>
-                <div className="text-[10px] uppercase tracking-wider text-purple-400 font-bold mt-1">4 Opportunities</div>
+                <div className="font-bold text-sm text-purple-950">Công việc đã lưu</div>
+                <div className="text-[10px] uppercase tracking-wider text-purple-400 font-bold mt-1">4 Cơ hội</div>
               </div>
             </div>
           </div>
           
           <div className="bg-secondary/10 rounded-[1.5rem] p-6 flex flex-col justify-center items-center text-center border border-secondary/20">
             <Award className="w-10 h-10 text-secondary mb-3 fill-secondary/20" />
-            <h4 className="font-bold mb-2 text-secondary-900">Verify Talent</h4>
-            <p className="text-xs text-on-surface-variant px-2 leading-relaxed">Take our assessment to earn a badge.</p>
+            <h4 className="font-bold mb-2 text-secondary-900">Xác thực tài năng</h4>
+            <p className="text-xs text-on-surface-variant px-2 leading-relaxed">Thực hiện bài đánh giá để nhận huy hiệu.</p>
           </div>
           
         </div>

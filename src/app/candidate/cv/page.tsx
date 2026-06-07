@@ -492,27 +492,27 @@ export default function CandidateCVPage() {
           <nav className="flex flex-col gap-1">
             <Link href="/candidate/profile" className="flex items-center gap-3 px-4 py-3 rounded-xl text-on-surface-variant hover:bg-surface-container-high transition-colors">
               <User className="w-5 h-5" />
-              <span className="font-medium">Personal Info</span>
+              <span className="font-medium">Thông tin cá nhân</span>
             </Link>
             <Link href="/candidate/cv" className="flex items-center gap-3 px-4 py-3 rounded-xl bg-primary-container/20 text-primary font-bold">
               <FileText className="w-5 h-5 fill-primary/20" />
-              <span>CV Management</span>
+              <span>Quản lý CV</span>
             </Link>
             <Link href="#" className="flex items-center gap-3 px-4 py-3 rounded-xl text-on-surface-variant hover:bg-surface-container-high transition-colors">
               <Lightbulb className="w-5 h-5" />
-              <span className="font-medium">AI Insights</span>
+              <span className="font-medium">Gợi ý từ AI</span>
             </Link>
             <Link href="#" className="flex items-center gap-3 px-4 py-3 rounded-xl text-on-surface-variant hover:bg-surface-container-high transition-colors">
               <Settings className="w-5 h-5" />
-              <span className="font-medium">Settings</span>
+              <span className="font-medium">Cài đặt</span>
             </Link>
           </nav>
         </aside>
 
         <div className="flex-1 space-y-8 min-w-0">
           <header className="flex flex-col gap-2">
-            <h1 className="text-4xl font-extrabold tracking-tight text-on-surface">CV Management</h1>
-            <p className="text-on-surface-variant text-lg bg-transparent">Manage your CV list, then open any CV to view details and AI review.</p>
+            <h1 className="text-4xl font-extrabold tracking-tight text-on-surface">Quản lý CV</h1>
+            <p className="text-on-surface-variant text-lg bg-transparent">Quản lý danh sách CV của bạn, sau đó mở CV bất kỳ để xem chi tiết và nhận xét từ AI.</p>
           </header>
 
           {errorMessage && (
@@ -540,8 +540,8 @@ export default function CandidateCVPage() {
                   {uploading ? <LoaderCircle className="w-6 h-6 animate-spin" /> : <CloudUpload className="w-6 h-6" />}
                 </div>
                 <div>
-                  <h3 className="text-lg font-bold text-on-surface">Upload CV</h3>
-                  <p className="text-on-surface-variant text-sm">PDF or DOCX, max 5MB.</p>
+                  <h3 className="text-lg font-bold text-on-surface">Tải CV lên</h3>
+                  <p className="text-on-surface-variant text-sm">PDF hoặc DOCX, tối đa 5MB.</p>
                 </div>
               </button>
 
@@ -554,24 +554,24 @@ export default function CandidateCVPage() {
                   <Sparkles className="w-6 h-6" />
                 </div>
                 <div>
-                  <h3 className="text-lg font-bold text-on-surface">Create from template</h3>
-                  <p className="text-on-surface-variant text-sm">Start building with a ready layout.</p>
+                  <h3 className="text-lg font-bold text-on-surface">Tạo từ mẫu</h3>
+                  <p className="text-on-surface-variant text-sm">Bắt đầu với một bố cục có sẵn.</p>
                 </div>
               </button>
             </div>
           </section>
 
           <section className="space-y-4">
-            <h2 className="text-2xl font-bold tracking-tight text-on-surface px-1">My CVs</h2>
+            <h2 className="text-2xl font-bold tracking-tight text-on-surface px-1">CV của tôi</h2>
 
             {loadingList ? (
               <div className="glass-card rounded-[2rem] p-8 text-on-surface-variant text-sm flex items-center gap-2">
                 <LoaderCircle className="w-4 h-4 animate-spin" />
-                Loading CVs...
+                Đang tải CV...
               </div>
             ) : cvs.length === 0 ? (
               <div className="glass-card rounded-[2rem] p-8 text-on-surface-variant text-sm">
-                No CV yet. Upload one to get started.
+                Chưa có CV nào. Tải lên một CV để bắt đầu.
               </div>
             ) : (
               cvs.map((cv) => (
@@ -589,11 +589,11 @@ export default function CandidateCVPage() {
                         <h3 className="text-lg md:text-xl font-bold text-on-surface break-all">{cv.cvName}</h3>
                         {cv.isDefault && (
                           <span className="bg-secondary/10 text-secondary text-[10px] font-black px-3 py-1 rounded-full tracking-widest shrink-0">
-                            Default
+                            Mặc định
                           </span>
                         )}
                       </div>
-                      <p className="text-on-surface-variant text-sm mt-1">Uploaded on {formatDate(cv.uploadedAt)}</p>
+                      <p className="text-on-surface-variant text-sm mt-1">Đã tải lên vào {formatDate(cv.uploadedAt)}</p>
                     </div>
 
                     <div className="flex flex-wrap gap-4">
@@ -602,7 +602,7 @@ export default function CandidateCVPage() {
                         onClick={() => router.push(`/candidate/cv/${cv.id}`)}
                         className="flex items-center gap-1 text-primary font-bold text-sm hover:underline"
                       >
-                        <Eye className="w-4 h-4" /> Details
+                        <Eye className="w-4 h-4" /> Chi tiết
                       </button>
 
                       <button
@@ -616,7 +616,7 @@ export default function CandidateCVPage() {
                         ) : (
                           <CheckCircle className="w-4 h-4" />
                         )}
-                        Set as Default
+                        Đặt làm mặc định
                       </button>
 
                       {cv.aiStatus === "FAILED" && (
@@ -631,7 +631,7 @@ export default function CandidateCVPage() {
                           ) : (
                             <Sparkles className="w-4 h-4" />
                           )}
-                          Retry
+                          Thử lại
                         </button>
                       )}
 
@@ -646,7 +646,7 @@ export default function CandidateCVPage() {
                         ) : (
                           <Sparkles className="w-4 h-4" />
                         )}
-                        Extract
+                        Trích xuất
                       </button>
 
                       <button
@@ -660,7 +660,7 @@ export default function CandidateCVPage() {
                         ) : (
                           <Trash2 className="w-4 h-4" />
                         )}
-                        Delete
+                        Xóa
                       </button>
                     </div>
                   </div>
@@ -675,12 +675,12 @@ export default function CandidateCVPage() {
         <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-[2px] flex items-center justify-center p-4">
           <div className="w-full max-w-md glass-card rounded-3xl border border-white/50 p-6 shadow-2xl">
             <h3 className="text-xl font-extrabold text-on-surface">
-              {confirmAction.type === "delete" ? "Confirm CV deletion" : "Set default CV"}
+              {confirmAction.type === "delete" ? "Xác nhận xóa CV" : "Đặt CV mặc định"}
             </h3>
             <p className="text-sm text-on-surface-variant mt-2 leading-relaxed">
               {confirmAction.type === "delete"
-                ? `Are you sure you want to delete CV ${confirmAction.cvName}? This action cannot be undone.`
-                : `Do you want to set CV ${confirmAction.cvName} as the default CV?`}
+                ? `Bạn có chắc chắn muốn xóa CV ${confirmAction.cvName}? Hành động này không thể hoàn tác.`
+                : `Bạn có muốn đặt CV ${confirmAction.cvName} làm CV mặc định không?`}
             </p>
 
             <div className="flex justify-end gap-3 mt-6">
@@ -689,7 +689,7 @@ export default function CandidateCVPage() {
                 onClick={() => setConfirmAction(null)}
                 className="px-4 py-2 rounded-xl text-sm font-bold text-on-surface-variant hover:bg-surface-container-high"
               >
-                Cancel
+                Hủy
               </button>
               <button
                 type="button"
@@ -698,7 +698,7 @@ export default function CandidateCVPage() {
                   confirmAction.type === "delete" ? "bg-error hover:bg-error-dim" : "signature-gradient"
                 }`}
               >
-                {confirmAction.type === "delete" ? "Delete" : "Confirm"}
+                {confirmAction.type === "delete" ? "Xóa" : "Xác nhận"}
               </button>
             </div>
           </div>
@@ -725,9 +725,9 @@ export default function CandidateCVPage() {
           <div className="w-full max-w-lg rounded-3xl border border-outline/30 bg-surface p-6 shadow-2xl space-y-4 max-h-[85vh] flex flex-col">
             <div className="flex items-center gap-3">
               <div>
-                <h3 className="text-xl font-extrabold text-on-surface">Extracting CV information</h3>
+                <h3 className="text-xl font-extrabold text-on-surface">Đang trích xuất thông tin CV</h3>
                 <p className="text-sm text-on-surface-variant mt-1">
-                  {extractionCvName ?? "Recently uploaded CV"}
+                  {extractionCvName ?? "CV vừa được tải lên"}
                 </p>
               </div>
             </div>
@@ -737,38 +737,38 @@ export default function CandidateCVPage() {
                 <div className="rounded-2xl border border-primary/10 bg-primary/5 px-4 py-4 flex items-center gap-3">
                   <LoaderCircle className="w-5 h-5 animate-spin text-primary" />
                   <div className="text-sm text-on-surface-variant">
-                    The system is analyzing your CV. Please wait a moment.
+                    Hệ thống đang phân tích CV của bạn. Vui lòng đợi một lát.
                   </div>
                 </div>
               )}
 
               {extractionStatus === "FAILED" && (
                 <div className="rounded-2xl border border-error/20 bg-error/10 px-4 py-4 text-sm text-error">
-                  {extractionError ?? "Extraction failed. Please try again later."}
+                  {extractionError ?? "Trích xuất thất bại. Vui lòng thử lại sau."}
                 </div>
               )}
 
               {extractionStatus === "COMPLETED" && (
                 <div className="space-y-3">
                   <div className="rounded-2xl border border-secondary/20 bg-secondary/5 px-4 py-4 text-sm text-on-surface">
-                    Extraction is complete. Do you want to use this data to update your personal profile?
+                    Trích xuất hoàn tất. Bạn có muốn sử dụng dữ liệu này để cập nhật hồ sơ cá nhân không?
                   </div>
 
                   {extractionData ? (
                     <div className="rounded-2xl border border-surface-container-high p-4 space-y-3 text-sm">
                       {extractionData.fullName && (
                         <div>
-                          <span className="font-bold">Full name:</span> {extractionData.fullName}
+                          <span className="font-bold">Họ và tên:</span> {extractionData.fullName}
                         </div>
                       )}
                       {extractionData.headline && (
                         <div>
-                          <span className="font-bold">Headline:</span> {extractionData.headline}
+                          <span className="font-bold">Tiêu đề:</span> {extractionData.headline}
                         </div>
                       )}
                       {extractionData.phoneNumber && (
                         <div>
-                          <span className="font-bold">Phone number:</span> {extractionData.phoneNumber}
+                          <span className="font-bold">Số điện thoại:</span> {extractionData.phoneNumber}
                         </div>
                       )}
                       {extractionData.email && (
@@ -778,7 +778,7 @@ export default function CandidateCVPage() {
                       )}
                       {extractionData.skills && extractionData.skills.length > 0 && (
                         <div>
-                          <span className="font-bold">Skills:</span>
+                          <span className="font-bold">Kỹ năng:</span>
                           <div className={`mt-2 flex flex-wrap gap-2 max-h-28 overflow-y-auto pr-1 ${themedScrollbarClass}`}>
                             {extractionData.skills.map((skill, index) => (
                               <span
@@ -794,7 +794,7 @@ export default function CandidateCVPage() {
                     </div>
                   ) : (
                     <div className="rounded-2xl border border-surface-container-high p-4 text-sm text-on-surface-variant">
-                      No suitable data found for update.
+                      Không tìm thấy dữ liệu phù hợp để cập nhật.
                     </div>
                   )}
                 </div>
@@ -812,7 +812,7 @@ export default function CandidateCVPage() {
                   onClick={handleCancelExtractionPolling}
                   className="px-4 py-2 rounded-xl text-sm font-bold text-on-surface-variant hover:bg-surface-container-high"
                 >
-                  Stop waiting
+                  Ngừng chờ
                 </button>
               )}
               {!pollingExtraction && extractionStatus === "PENDING" && (
@@ -821,7 +821,7 @@ export default function CandidateCVPage() {
                   onClick={() => setPollingExtraction(true)}
                   className="px-4 py-2 rounded-xl text-sm font-bold text-on-surface-variant hover:bg-surface-container-high"
                 >
-                  Continue waiting
+                  Tiếp tục chờ
                 </button>
               )}
               {extractionStatus === "COMPLETED" && (
@@ -830,7 +830,7 @@ export default function CandidateCVPage() {
                   onClick={handleCloseExtractionModal}
                   className="px-4 py-2 rounded-xl text-sm font-bold text-on-surface-variant hover:bg-surface-container-high"
                 >
-                  Skip
+                  Bỏ qua
                 </button>
               )}
               {extractionStatus === "COMPLETED" && extractionData && (
@@ -840,7 +840,7 @@ export default function CandidateCVPage() {
                   disabled={applyingExtraction}
                   className="signature-gradient text-white px-4 py-2 rounded-xl text-sm font-bold disabled:opacity-60"
                 >
-                  {applyingExtraction ? "Updating..." : "Update Profile"}
+                  {applyingExtraction ? "Đang cập nhật..." : "Cập nhật hồ sơ"}
                 </button>
               )}
               {extractionCvId && (
@@ -849,7 +849,7 @@ export default function CandidateCVPage() {
                   onClick={() => router.push(`/candidate/cv/${extractionCvId}`)}
                   className="px-4 py-2 rounded-xl text-sm font-bold text-primary border border-primary/30 hover:bg-primary/5"
                 >
-                  View CV
+                  Xem CV
                 </button>
               )}
             </div>
@@ -862,9 +862,9 @@ export default function CandidateCVPage() {
           <div className="w-full max-w-3xl rounded-3xl border border-outline/30 bg-surface p-7 shadow-2xl max-h-[88vh] flex flex-col">
             <div className="flex items-start gap-3">
               <div>
-                <h3 className="text-xl font-extrabold text-on-surface">Confirm profile update</h3>
+                <h3 className="text-xl font-extrabold text-on-surface">Xác nhận cập nhật hồ sơ</h3>
                 <p className="text-sm text-on-surface-variant mt-1">
-                  Data extracted from CV: {extractCvName ?? "--"}
+                  Dữ liệu được trích xuất từ CV: {extractCvName ?? "--"}
                 </p>
               </div>
             </div>
@@ -872,25 +872,25 @@ export default function CandidateCVPage() {
             <div className={`overflow-y-auto py-4 pr-1 ${themedScrollbarClass}`}>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <label className="text-[11px] font-bold uppercase tracking-widest text-on-surface-variant">Full Name</label>
+                  <label className="text-[11px] font-bold uppercase tracking-widest text-on-surface-variant">Họ và tên</label>
                   <input
                     className="w-full px-4 py-3 rounded-xl bg-surface-container-high border border-white/60 text-sm text-on-surface focus:ring-2 focus:ring-primary/40 outline-none"
                     value={extractForm.fullName}
                     onChange={(event) => setExtractForm((prev) => ({ ...prev, fullName: event.target.value }))}
-                    placeholder="John Doe"
+                    placeholder="Nguyễn Văn A"
                   />
                 </div>
                 <div className="space-y-2">
-                  <label className="text-[11px] font-bold uppercase tracking-widest text-on-surface-variant">Headline</label>
+                  <label className="text-[11px] font-bold uppercase tracking-widest text-on-surface-variant">Tiêu đề</label>
                   <input
                     className="w-full px-4 py-3 rounded-xl bg-surface-container-high border border-white/60 text-sm text-on-surface focus:ring-2 focus:ring-primary/40 outline-none"
                     value={extractForm.headline}
                     onChange={(event) => setExtractForm((prev) => ({ ...prev, headline: event.target.value }))}
-                    placeholder="Product Designer"
+                    placeholder="Thiết kế Sản phẩm"
                   />
                 </div>
                 <div className="space-y-2">
-                  <label className="text-[11px] font-bold uppercase tracking-widest text-on-surface-variant">Phone Number</label>
+                  <label className="text-[11px] font-bold uppercase tracking-widest text-on-surface-variant">Số điện thoại</label>
                   <input
                     className="w-full px-4 py-3 rounded-xl bg-surface-container-high border border-white/60 text-sm text-on-surface focus:ring-2 focus:ring-primary/40 outline-none"
                     value={extractForm.phoneNumber}
@@ -899,10 +899,10 @@ export default function CandidateCVPage() {
                   />
                 </div>
                 <div className="space-y-2 md:col-span-2">
-                  <label className="text-[11px] font-bold uppercase tracking-widest text-on-surface-variant">Skills</label>
+                  <label className="text-[11px] font-bold uppercase tracking-widest text-on-surface-variant">Kỹ năng</label>
                   <div className="rounded-xl bg-surface-container-high border border-white/60 p-3 min-h-[132px]">
                     {extractSkillChips.length === 0 ? (
-                      <span className="text-xs text-on-surface-variant">No skills</span>
+                      <span className="text-xs text-on-surface-variant">Không có kỹ năng</span>
                     ) : (
                       <div className={`flex flex-wrap gap-2 max-h-36 overflow-y-auto pr-1 ${themedScrollbarClass}`}>
                         {extractSkillChips.map((skill, index) => (
@@ -926,7 +926,7 @@ export default function CandidateCVPage() {
                 onClick={() => setShowExtractForm(false)}
                 className="px-4 py-2 rounded-xl text-sm font-bold text-on-surface-variant hover:bg-surface-container-high"
               >
-                Cancel
+                Hủy
               </button>
               <button
                 type="button"
@@ -934,7 +934,7 @@ export default function CandidateCVPage() {
                 disabled={extractApplying}
                 className="signature-gradient text-white px-4 py-2 rounded-xl text-sm font-bold disabled:opacity-60"
               >
-                {extractApplying ? "Updating..." : "Update Profile"}
+                {extractApplying ? "Đang cập nhật..." : "Cập nhật hồ sơ"}
               </button>
             </div>
           </div>
