@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { AtSign, Building2, ChevronDown, Loader2, MapPin, Phone, ShieldCheck } from "lucide-react";
 import { createCompany, type CompanyRequest } from "@/lib/api/company";
+import { BRAND_NAME } from "@/lib/brand";
 
 export default function CreateCompanyPage() {
   const router = useRouter();
@@ -50,7 +51,7 @@ export default function CreateCompanyPage() {
 
       <div className="mb-10 text-center">
         <h1 className="text-3xl font-black tracking-tighter bg-gradient-to-br from-blue-600 to-purple-600 bg-clip-text text-transparent">
-          The Curator
+          {BRAND_NAME}
         </h1>
         <p className="text-on-surface-variant mt-2 font-medium tracking-tight">Recruiter Registration - Company Setup</p>
       </div>

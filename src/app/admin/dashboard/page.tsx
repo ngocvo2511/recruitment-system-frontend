@@ -208,17 +208,20 @@ export default function AdminDashboardPage() {
           </div>
         </div>
 
-        <div className="glass-card p-6 rounded-2xl border border-white/40 shadow-sm flex flex-col justify-between signature-gradient text-white shadow-lg shadow-primary/20 relative overflow-hidden">
-          <div className="absolute -top-12 -right-12 w-32 h-32 bg-white/10 rounded-full blur-2xl" />
+        <div className="glass-card p-6 rounded-2xl border border-primary/20 shadow-sm flex flex-col justify-between bg-primary/5 relative overflow-hidden">
+          <div className="absolute -top-12 -right-12 w-32 h-32 bg-primary/10 rounded-full blur-2xl" />
           <div className="flex justify-between items-start relative z-10">
-            <div className="p-2.5 bg-white/20 rounded-xl text-white backdrop-blur-sm">
+            <div className="p-2.5 bg-primary/10 rounded-xl text-primary">
               <Zap className="w-6 h-6" />
             </div>
+            <span className="flex items-center text-xs font-bold text-primary bg-primary/10 px-2.5 py-1 rounded-full">
+              {formatNumber(metrics.applicationsLast7Days)} trong 7 ngày
+            </span>
           </div>
           <div className="mt-5 relative z-10">
-            <p className="text-[10px] uppercase tracking-widest text-white/80 font-bold mb-1">Đơn ứng tuyển</p>
-            <h2 className="text-3xl font-black tracking-tight text-white mb-2">{formatNumber(metrics.totalApplications)}</h2>
-            <p className="text-[10px] text-white/80 font-medium">
+            <p className="text-[10px] uppercase tracking-widest text-on-surface-variant font-bold mb-1">Đơn ứng tuyển</p>
+            <h2 className="text-3xl font-black tracking-tight text-on-surface mb-2">{formatNumber(metrics.totalApplications)}</h2>
+            <p className="text-xs text-on-surface-variant font-medium">
               {formatNumber(metrics.applicationsLast7Days)} trong 7 ngày - {formatNumber(metrics.applicationsLast30Days)} trong 30 ngày
             </p>
           </div>
@@ -242,9 +245,11 @@ export default function AdminDashboardPage() {
               { label: "Đơn ứng tuyển", value: metrics.totalApplications },
             ].map((item, index) => (
               <div key={item.label} className="flex-1 flex flex-col items-center gap-3 h-full justify-end">
+                <span className="text-lg font-black text-on-surface">{formatNumber(item.value)}</span>
                 <div
-                  className={`w-full rounded-t-xl transition-all ${index === 3 ? "signature-gradient" : "bg-primary/20"}`}
-                  style={{ height: `${Math.max((item.value / chartMax) * 100, 5)}%` }}
+                  className={`w-full rounded-t-xl transition-all border border-white/40 ${index === 3 ? "bg-primary" : index === 2 ? "bg-blue-500" : index === 1 ? "bg-secondary" : "bg-emerald-500"}`}
+                  style={{ height: `${Math.max((item.value / chartMax) * 72, 12)}%` }}
+                  title={`${item.label}: ${formatNumber(item.value)}`}
                 />
                 <span className="text-[10px] uppercase font-bold tracking-widest text-on-surface-variant">{item.label}</span>
               </div>

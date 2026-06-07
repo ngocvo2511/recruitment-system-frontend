@@ -1,9 +1,18 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { Suspense, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import Link from "next/link";
 import { Check, Eye, EyeOff, Loader2, Lock, Mail } from "lucide-react";
+import {
+  clearAuthSession,
+  getAccountTypeFromToken,
+  getHomePathForAccount,
+  getStoredAccountType,
+  getStoredToken,
+  normalizeAccountType,
+  saveAuthSession,
+} from "@/lib/authSession";
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:8080";
 const LOGIN_ERROR_MESSAGE = "Thông tin đăng nhập admin không hợp lệ.";
@@ -16,6 +25,14 @@ function AdminLoginForm() {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
+
+  useEffect(() => {
+    const token = getStoredToken();
+    const accountType = getStoredAccountType();
+    if (token && accountType === "admin") {
+      router.replace("/admin/dashboard");
+    }
+  }, [router]);
 
   const handleLogin = async (event: React.FormEvent) => {
     event.preventDefault();
@@ -32,21 +49,25 @@ function AdminLoginForm() {
       });
       const data = await response.json();
 
-      if (response.ok && data.code === 1000 && data.result?.accountType === "ADMIN") {
-        window.localStorage.setItem("token", data.result.token);
-        window.localStorage.setItem("accountType", "admin");
-        if (data.result.userId) {
-          window.localStorage.setItem("userId", data.result.userId);
+      if (response.ok && data.code === 1000) {
+        const token = data.result.token as string;
+        const accountType = normalizeAccountType(data.result.accountType) ?? getAccountTypeFromToken(token);
+
+        if (accountType === "admin") {
+          saveAuthSession(token, accountType, data.result.userId);
+          router.replace(getHomePathForAccount(accountType));
+          return;
         }
-        router.push("/admin/dashboard");
+
+        clearAuthSession();
+        setErrorMessage(LOGIN_ERROR_MESSAGE);
         return;
       }
 
-      window.localStorage.removeItem("token");
-      window.localStorage.removeItem("accountType");
-      window.localStorage.removeItem("userId");
+      clearAuthSession();
       setErrorMessage(LOGIN_ERROR_MESSAGE);
     } catch {
+      clearAuthSession();
       setErrorMessage(LOGIN_ERROR_MESSAGE);
     } finally {
       setLoading(false);
@@ -84,7 +105,7 @@ function AdminLoginForm() {
                   disabled={loading}
                   value={email}
                   onChange={(event) => setEmail(event.target.value)}
-                  className="w-full pl-12 pr-4 py-4 bg-surface-container-high/50 border-none rounded-xl focus:ring-2 focus:ring-primary/40 focus:bg-white transition-all outline-none placeholder:text-outline-variant"
+                  className="w-full pl-12 pr-4 py-4 bg-surface-container-high/50 border-none rounded-xl focus:ring-2 focus:ring-primary/40 focus:bg-white transition-all outline-none placeholder:text-outline-variant disabled:opacity-70"
                   placeholder="admin@example.com"
                   type="email"
                 />
@@ -104,7 +125,7 @@ function AdminLoginForm() {
                   disabled={loading}
                   value={password}
                   onChange={(event) => setPassword(event.target.value)}
-                  className="w-full pl-12 pr-12 py-4 bg-surface-container-high/50 border-none rounded-xl focus:ring-2 focus:ring-primary/40 focus:bg-white transition-all outline-none placeholder:text-outline-variant"
+                  className="w-full pl-12 pr-12 py-4 bg-surface-container-high/50 border-none rounded-xl focus:ring-2 focus:ring-primary/40 focus:bg-white transition-all outline-none placeholder:text-outline-variant disabled:opacity-70"
                   placeholder="Mật khẩu"
                   type={showPassword ? "text" : "password"}
                 />
@@ -128,8 +149,8 @@ function AdminLoginForm() {
               </div>
               <span className="text-sm font-medium text-on-surface-variant group-hover:text-on-surface transition-colors">Ghi nhớ phiên đăng nhập</span>
             </label>
-            <Link className="text-sm font-semibold text-primary hover:underline underline-offset-4 decoration-2" href="#">
-              Quên thông tin?
+            <Link className="text-sm font-semibold text-primary hover:underline underline-offset-4 decoration-2" href="/login">
+              Đăng nhập user
             </Link>
           </div>
 

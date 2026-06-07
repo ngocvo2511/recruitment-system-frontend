@@ -104,7 +104,8 @@ export default function CompanyModerationPage() {
 
   const submitAction = async () => {
     if (!pendingAction) return;
-    if (!reason.trim()) {
+    const isReasonRequired = pendingAction.action !== "verify";
+    if (isReasonRequired && !reason.trim()) {
       setErrorMessage("Vui lòng nhập lý do kiểm duyệt.");
       return;
     }
@@ -205,7 +206,17 @@ export default function CompanyModerationPage() {
           <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl">
             <h2 className="text-lg font-extrabold">{pendingAction.action === "verify" ? "Xác minh công ty" : pendingAction.action === "reject" ? "Từ chối công ty" : "Yêu cầu bổ sung"}</h2>
             <p className="mt-1 text-sm text-on-surface-variant">{pendingAction.company.name}</p>
-            <textarea value={reason} onChange={(event) => setReason(event.target.value)} className="mt-4 min-h-28 w-full rounded-xl border border-outline-variant/10 p-3 text-sm outline-none focus:ring-2 focus:ring-primary/20" placeholder="Nhập lý do hoặc ghi chú gửi cho recruiter..." />
+            <textarea
+              value={reason}
+              onChange={(event) => setReason(event.target.value)}
+              className="mt-4 min-h-28 w-full rounded-xl border border-outline-variant/10 p-3 text-sm outline-none focus:ring-2 focus:ring-primary/20"
+              placeholder={pendingAction.action === "verify" ? "Ghi chú xác minh, có thể để trống..." : "Nhập lý do hoặc ghi chú gửi cho recruiter..."}
+            />
+            {pendingAction.action === "verify" ? (
+              <p className="mt-2 text-xs text-on-surface-variant">Xác minh công ty không bắt buộc nhập lý do. Ghi chú chỉ dùng cho audit log nếu cần.</p>
+            ) : (
+              <p className="mt-2 text-xs text-error">Từ chối hoặc yêu cầu bổ sung cần có lý do rõ ràng.</p>
+            )}
             <div className="mt-5 flex justify-end gap-3"><button type="button" onClick={() => setPendingAction(null)} className="rounded-xl px-4 py-2 text-sm font-bold text-on-surface-variant hover:bg-surface-container">Hủy</button><button type="button" onClick={() => void submitAction()} className="rounded-xl bg-primary px-5 py-2 text-sm font-bold text-on-primary">Xác nhận</button></div>
           </div>
         </div>

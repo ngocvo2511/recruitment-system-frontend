@@ -2,8 +2,10 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { Bell, Briefcase, Building2, HelpCircle, LayoutDashboard, LogOut, MessageSquare, Plus, Search, Settings, Sparkles, Users } from "lucide-react";
+import { BRAND_NAME } from "@/lib/brand";
+import { getHomePathForAccount, getStoredAccountType, getStoredToken } from "@/lib/authSession";
 
 const navItems = [
   { href: "/recruiter/dashboard", label: "Tổng quan", icon: LayoutDashboard },
@@ -21,14 +23,29 @@ export default function RecruiterLayout({
 }) {
   const pathname = usePathname();
   const router = useRouter();
+  const [isAuthorized, setIsAuthorized] = useState(false);
 
   useEffect(() => {
-    const accountType = window.localStorage.getItem("accountType");
-    const token = window.localStorage.getItem("token");
-    if (!token || accountType !== "recruiter") {
+    const token = getStoredToken();
+    const accountType = getStoredAccountType();
+
+    if (!token || !accountType) {
       router.replace("/login?role=recruiter");
+      return;
     }
+
+    if (accountType !== "recruiter") {
+      router.replace(getHomePathForAccount(accountType));
+      return;
+    }
+
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setIsAuthorized(true);
   }, [router]);
+
+  if (!isAuthorized) {
+    return null;
+  }
 
   const logout = () => {
     window.localStorage.removeItem("token");
@@ -41,7 +58,7 @@ export default function RecruiterLayout({
     <div className="bg-background text-on-surface min-h-screen selection:bg-primary-container selection:text-on-primary-container flex">
       <nav className="fixed top-0 z-50 w-full bg-slate-50/70 backdrop-blur-xl shadow-[0_4px_30px_rgba(0,0,0,0.05)] border-b border-outline-variant/10 flex justify-between items-center px-8 py-4 h-16 tracking-tight">
         <div className="flex items-center gap-8">
-          <span className="text-xl font-bold text-primary">Ethereal Talent</span>
+          <span className="text-xl font-bold text-primary">{BRAND_NAME}</span>
           <div className="hidden md:flex gap-6 items-center">
             {navItems.slice(0, 5).map((item) => {
               const active = pathname.startsWith(item.href);
@@ -81,7 +98,7 @@ export default function RecruiterLayout({
               <Briefcase className="w-5 h-5" />
             </div>
             <div>
-              <p className="text-slate-900 font-black text-lg leading-tight">Cổng tuyển dụng</p>
+              <p className="text-slate-900 font-black text-lg leading-tight">{BRAND_NAME}</p>
               <p className="text-xs text-on-surface-variant uppercase tracking-widest font-medium">Nhà tuyển dụng</p>
             </div>
           </div>

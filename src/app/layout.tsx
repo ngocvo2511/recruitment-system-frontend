@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
+import { BRAND_NAME } from "@/lib/brand";
 import "./globals.css";
 
 const inter = Inter({
@@ -8,7 +9,7 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "The Curator - Recruitment Platform",
+  title: `${BRAND_NAME} - Recruitment Platform`,
   description: "Kết nối nhà tuyển dụng và ứng viên, tối ưu quy trình tuyển dụng bằng AI",
 };
 

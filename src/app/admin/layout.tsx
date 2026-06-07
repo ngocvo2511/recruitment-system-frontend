@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import {
   Bell,
   Briefcase,
@@ -17,6 +17,8 @@ import {
   UserCircle,
   Users,
 } from "lucide-react";
+import { BRAND_NAME } from "@/lib/brand";
+import { getStoredAccountType, getStoredToken } from "@/lib/authSession";
 
 const navItems = [
   { href: "/admin/dashboard", label: "Tổng quan", icon: LayoutDashboard },
@@ -28,7 +30,7 @@ const navItems = [
 ];
 
 function isAdminAccount(accountType: string | null): boolean {
-  return accountType === "admin" || accountType === "ADMIN";
+  return accountType === "admin";
 }
 
 export default function AdminLayout({
@@ -38,15 +40,29 @@ export default function AdminLayout({
 }) {
   const pathname = usePathname();
   const router = useRouter();
+  const [isAuthorized, setIsAuthorized] = useState(false);
 
   useEffect(() => {
-    const token = window.localStorage.getItem("token");
-    const accountType = window.localStorage.getItem("accountType");
+    const token = getStoredToken();
+    const accountType = getStoredAccountType();
 
-    if (!token || !isAdminAccount(accountType)) {
+    if (!token || !accountType) {
       router.replace("/admin/login");
+      return;
     }
+
+    if (!isAdminAccount(accountType)) {
+      router.replace("/admin/login");
+      return;
+    }
+
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setIsAuthorized(true);
   }, [router]);
+
+  if (!isAuthorized) {
+    return null;
+  }
 
   const logout = () => {
     window.localStorage.removeItem("token");
@@ -59,8 +75,8 @@ export default function AdminLayout({
     <div className="bg-surface text-on-surface min-h-screen flex text-sm">
       <aside className="h-screen w-72 fixed left-0 top-0 z-40 bg-slate-50/80 dark:bg-slate-950/80 backdrop-blur-2xl p-6 gap-4 border-r border-slate-200/10 shadow-2xl shadow-slate-900/5 hidden md:flex flex-col">
         <div className="mt-8 mb-8 px-4">
-          <h2 className="text-lg font-bold text-slate-900">Admin Portal</h2>
-          <p className="text-xs font-medium tracking-wide text-slate-500">System Controller</p>
+          <h2 className="text-lg font-bold text-slate-900">{BRAND_NAME}</h2>
+          <p className="text-xs font-medium tracking-wide text-slate-500">Quản trị hệ thống</p>
         </div>
 
         <nav className="flex flex-col gap-2 flex-1">
@@ -104,7 +120,7 @@ export default function AdminLayout({
         <header className="bg-white/70 dark:bg-slate-900/70 backdrop-blur-md sticky top-0 z-50 flex justify-between items-center px-8 h-20 w-full shadow-[0_20px_50px_rgba(0,80,212,0.05)] border-b border-outline-variant/10">
           <div className="flex items-center gap-4">
             <span className="text-xl font-extrabold tracking-tighter bg-gradient-to-br from-blue-700 to-purple-600 bg-clip-text text-transparent">
-              CareerCurator Admin
+              {BRAND_NAME} Admin
             </span>
           </div>
 

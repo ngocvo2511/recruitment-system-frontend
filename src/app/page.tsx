@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { ArrowRight, Briefcase, CheckCircle2, TrendingUp, Sparkles } from 'lucide-react';
+import { BRAND_NAME } from '@/lib/brand';
 
 export default function Home() {
   return (
@@ -15,7 +16,7 @@ export default function Home() {
         </div>
 
         <h1 className="text-5xl md:text-7xl font-extrabold tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-primary via-secondary to-tertiary">
-          The Curator
+          {BRAND_NAME}
         </h1>
         
         <p className="text-lg md:text-xl text-on-surface-variant max-w-2xl leading-relaxed">
@@ -73,8 +74,8 @@ export default function Home() {
       {/* Footer area simple for landing */}
       <footer className="w-full py-12 border-t border-outline-variant/10 mt-auto">
         <div className="max-w-7xl mx-auto px-6 flex flex-col md:flex-row justify-between items-center gap-4">
-          <div className="text-xl font-bold signature-gradient bg-clip-text text-transparent">The Curator</div>
-          <p className="text-sm text-on-surface-variant">© 2026 Recruitment Platform. All rights reserved.</p>
+          <div className="text-xl font-bold signature-gradient bg-clip-text text-transparent">{BRAND_NAME}</div>
+          <p className="text-sm text-on-surface-variant">© 2026 {BRAND_NAME}. Bảo lưu mọi quyền.</p>
         </div>
       </footer>
     </main>

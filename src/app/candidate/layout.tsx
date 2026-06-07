@@ -3,7 +3,9 @@
 import Link from "next/link";
 import { Bell } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
+import { BRAND_NAME } from "@/lib/brand";
+import { getHomePathForAccount, getStoredAccountType, getStoredToken } from "@/lib/authSession";
 
 export default function CandidateLayout({
   children,
@@ -11,15 +13,29 @@ export default function CandidateLayout({
   children: React.ReactNode;
 }) {
   const router = useRouter();
+  const [isAuthorized, setIsAuthorized] = useState(false);
 
   useEffect(() => {
-    const token = window.localStorage.getItem("token");
-    const accountType = window.localStorage.getItem("accountType");
+    const token = getStoredToken();
+    const accountType = getStoredAccountType();
 
-    if (!token || accountType !== "candidate") {
+    if (!token || !accountType) {
       router.replace("/login?role=candidate");
+      return;
     }
+
+    if (accountType !== "candidate") {
+      router.replace(getHomePathForAccount(accountType));
+      return;
+    }
+
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setIsAuthorized(true);
   }, [router]);
+
+  if (!isAuthorized) {
+    return null;
+  }
 
   return (
     <div className="bg-surface font-body text-on-surface selection:bg-primary/20 min-h-screen">
@@ -34,13 +50,13 @@ export default function CandidateLayout({
         <div className="flex justify-between items-center w-full px-8 h-20 max-w-7xl mx-auto tracking-tight">
           <div className="flex items-center gap-12">
             <Link href="/candidate/jobs" className="text-2xl font-black tracking-tighter bg-gradient-to-br from-blue-600 to-blue-400 bg-clip-text text-transparent">
-              EtherealCareers
+              {BRAND_NAME}
             </Link>
             <div className="hidden md:flex gap-8 items-center">
-              <Link href="/candidate/jobs" className="text-blue-600 dark:text-blue-400 font-semibold border-b-2 border-blue-600 pb-1">Jobs</Link>
-              <Link href="/candidate/applications" className="text-slate-600 dark:text-slate-400 hover:text-blue-500 transition-colors">Applications</Link>
-              <Link href="/candidate/cv" className="text-slate-600 dark:text-slate-400 hover:text-blue-500 transition-colors">CV Management</Link>
-              <Link href="/candidate/profile" className="text-slate-600 dark:text-slate-400 hover:text-blue-500 transition-colors">Profile</Link>
+              <Link href="/candidate/jobs" className="text-blue-600 dark:text-blue-400 font-semibold border-b-2 border-blue-600 pb-1">Việc làm</Link>
+              <Link href="/candidate/applications" className="text-slate-600 dark:text-slate-400 hover:text-blue-500 transition-colors">Đơn ứng tuyển</Link>
+              <Link href="/candidate/cv" className="text-slate-600 dark:text-slate-400 hover:text-blue-500 transition-colors">Quản lý CV</Link>
+              <Link href="/candidate/profile" className="text-slate-600 dark:text-slate-400 hover:text-blue-500 transition-colors">Hồ sơ</Link>
             </div>
           </div>
           <div className="flex items-center gap-6">
@@ -62,14 +78,14 @@ export default function CandidateLayout({
       {/* Footer */}
       <footer className="w-full py-12 mt-auto bg-slate-50 dark:bg-slate-950 tonal-transition bg-gradient-to-t from-slate-100 to-transparent dark:from-slate-900">
         <div className="flex flex-col md:flex-row justify-between items-center px-8 max-w-7xl mx-auto gap-6">
-          <div className="text-lg font-bold text-slate-900 dark:text-slate-100">EtherealCareers</div>
+          <div className="text-lg font-bold text-slate-900 dark:text-slate-100">{BRAND_NAME}</div>
           <div className="flex flex-wrap justify-center gap-8 text-sm tracking-wide uppercase">
-            <Link className="text-slate-500 dark:text-slate-400 hover:text-blue-500 underline-offset-4 hover:underline transition-opacity" href="#">Privacy Policy</Link>
-            <Link className="text-slate-500 dark:text-slate-400 hover:text-blue-500 underline-offset-4 hover:underline transition-opacity" href="#">Terms of Service</Link>
-            <Link className="text-slate-500 dark:text-slate-400 hover:text-blue-500 underline-offset-4 hover:underline transition-opacity" href="#">Contact Support</Link>
-            <Link className="text-slate-500 dark:text-slate-400 hover:text-blue-500 underline-offset-4 hover:underline transition-opacity" href="#">Career Advice</Link>
+            <Link className="text-slate-500 dark:text-slate-400 hover:text-blue-500 underline-offset-4 hover:underline transition-opacity" href="#">Chính sách bảo mật</Link>
+            <Link className="text-slate-500 dark:text-slate-400 hover:text-blue-500 underline-offset-4 hover:underline transition-opacity" href="#">Điều khoản dịch vụ</Link>
+            <Link className="text-slate-500 dark:text-slate-400 hover:text-blue-500 underline-offset-4 hover:underline transition-opacity" href="#">Hỗ trợ</Link>
+            <Link className="text-slate-500 dark:text-slate-400 hover:text-blue-500 underline-offset-4 hover:underline transition-opacity" href="#">Tư vấn nghề nghiệp</Link>
           </div>
-          <div className="text-slate-500 dark:text-slate-400 text-sm">© 2026 Ethereal Professional. All rights reserved.</div>
+          <div className="text-slate-500 dark:text-slate-400 text-sm">© 2026 {BRAND_NAME}. Bảo lưu mọi quyền.</div>
         </div>
       </footer>
     </div>

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { Sparkles, MapPin, ArrowRight, Bookmark, RefreshCw, Star, Loader2, ChevronDown, CheckCircle2, Search } from "lucide-react";
 import { getJobs, JobResponse, getJobMatches, CvRecommendationResponse } from "@/lib/api/jobs";
@@ -13,19 +13,8 @@ export default function AISuggestionsPage() {
   const [isSyncing, setIsSyncing] = useState(false);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
 
-  useEffect(() => {
-    fetchJobs();
-  }, []);
-
-  useEffect(() => {
-    if (selectedJob) {
-      fetchMatches(selectedJob.id);
-    }
-  }, [selectedJob]);
-
-  const fetchJobs = async () => {
+  const fetchJobs = useCallback(async () => {
     try {
-      setIsLoading(true);
       const data = await getJobs();
       setJobs(data);
       if (data.length > 0) {
@@ -36,9 +25,9 @@ export default function AISuggestionsPage() {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, []);
 
-  const fetchMatches = async (jobId: string) => {
+  const fetchMatches = useCallback(async (jobId: string) => {
     try {
       setIsSyncing(true);
       const data = await getJobMatches(jobId, 5);
@@ -49,7 +38,19 @@ export default function AISuggestionsPage() {
     } finally {
       setIsSyncing(false);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    fetchJobs();
+  }, [fetchJobs]);
+
+  useEffect(() => {
+    if (selectedJob) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      fetchMatches(selectedJob.id);
+    }
+  }, [fetchMatches, selectedJob]);
 
   const handleSync = () => {
     if (selectedJob) {
@@ -61,7 +62,7 @@ export default function AISuggestionsPage() {
     return (
       <div className="flex flex-col items-center justify-center min-h-[60vh]">
         <Loader2 className="w-12 h-12 text-primary animate-spin mb-4" />
-        <p className="text-on-surface-variant font-medium">Loading intelligence data...</p>
+        <p className="text-on-surface-variant font-medium">Đang tải dữ liệu gợi ý AI...</p>
       </div>
     );
   }
@@ -77,7 +78,7 @@ export default function AISuggestionsPage() {
         <div className="absolute -top-12 -right-8 w-64 h-64 signature-gradient opacity-5 rounded-full blur-[100px]"></div>
         <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 relative z-10">
           <div>
-            <span className="text-primary font-bold text-xs tracking-[0.2em] uppercase mb-3 block">Job Intelligence</span>
+            <span className="text-primary font-bold text-xs tracking-[0.2em] uppercase mb-3 block">Gợi ý ứng viên bằng AI</span>
             
             {/* Job Selector */}
             <div className="relative mb-4">
@@ -85,7 +86,7 @@ export default function AISuggestionsPage() {
                 onClick={() => setIsDropdownOpen(!isDropdownOpen)}
                 className="flex items-center gap-3 text-4xl md:text-5xl font-black text-on-surface tracking-tighter hover:text-primary transition-colors text-left"
               >
-                Top Matches for <span className="underline decoration-primary/30 decoration-4 underline-offset-8">{selectedJob?.title || "Select a Job"}</span>
+                Ứng viên phù hợp cho <span className="underline decoration-primary/30 decoration-4 underline-offset-8">{selectedJob?.title || "Chọn tin tuyển dụng"}</span>
                 <ChevronDown className={`w-8 h-8 transition-transform ${isDropdownOpen ? "rotate-180" : ""}`} />
               </button>
               
@@ -93,7 +94,7 @@ export default function AISuggestionsPage() {
                 <div className="absolute top-full left-0 mt-4 w-full md:w-[600px] bg-surface rounded-2xl shadow-2xl border border-outline-variant overflow-hidden z-50 animate-fade-in-up">
                   <div className="max-h-[300px] overflow-y-auto p-2">
                     {jobs.length === 0 ? (
-                      <p className="p-4 text-center text-on-surface-variant">No active jobs found.</p>
+                      <p className="p-4 text-center text-on-surface-variant">Chưa có tin tuyển dụng đang hoạt động.</p>
                     ) : (
                       jobs.map(job => (
                         <button
@@ -107,7 +108,7 @@ export default function AISuggestionsPage() {
                           <div>
                             <h4 className={`font-bold ${selectedJob?.id === job.id ? "text-primary" : "text-on-surface"}`}>{job.title}</h4>
                             <p className="text-sm text-on-surface-variant flex items-center gap-2 mt-1">
-                              <MapPin className="w-3 h-3" /> {job.location || "Remote"} • {job.level || "Any Level"}
+                              <MapPin className="w-3 h-3" /> {job.location || "Làm việc từ xa"} • {job.level || "Không yêu cầu cấp bậc"}
                             </p>
                           </div>
                           {selectedJob?.id === job.id && <CheckCircle2 className="w-5 h-5 text-primary" />}
@@ -119,11 +120,11 @@ export default function AISuggestionsPage() {
               )}
             </div>
             
-            <p className="text-on-surface-variant text-lg max-w-2xl leading-relaxed">AI curated analysis based on technical proficiency, cultural synergy, and project portfolio alignment.</p>
+            <p className="text-on-surface-variant text-lg max-w-2xl leading-relaxed">AI phân tích CV dựa trên mô tả công việc, yêu cầu kỹ năng, mức độ phù hợp ngữ nghĩa và tín hiệu từ hồ sơ ứng viên.</p>
           </div>
           <div className="flex gap-3">
             <Link href="/recruiter/jobs" className="px-6 py-3 rounded-full border border-outline-variant text-on-surface-variant font-medium hover:bg-surface-container-low transition-all">
-              Manage Jobs
+              Quản lý tin tuyển dụng
             </Link>
             <button 
               onClick={handleSync}
@@ -131,7 +132,7 @@ export default function AISuggestionsPage() {
               className="px-6 py-3 rounded-full bg-secondary text-white font-bold shadow-xl shadow-secondary/20 flex items-center gap-2 hover:scale-105 transition-all disabled:opacity-50 disabled:hover:scale-100"
             >
               <RefreshCw className={`w-4 h-4 ${isSyncing ? "animate-spin" : ""}`} />
-              {isSyncing ? "Syncing..." : "Re-sync AI"}
+              {isSyncing ? "Đang đồng bộ..." : "Đồng bộ lại AI"}
             </button>
           </div>
         </div>
@@ -143,17 +144,17 @@ export default function AISuggestionsPage() {
             <div className="w-24 h-24 border-4 border-primary/20 border-t-primary rounded-full animate-spin"></div>
             <Sparkles className="w-8 h-8 text-primary absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2" />
           </div>
-          <p className="mt-6 text-xl font-bold text-on-surface">Searching the talent pool...</p>
-          <p className="text-on-surface-variant">Analyzing thousands of candidates for perfect matches.</p>
+          <p className="mt-6 text-xl font-bold text-on-surface">Đang tìm ứng viên phù hợp...</p>
+          <p className="text-on-surface-variant">AI đang phân tích CV và so khớp với yêu cầu tuyển dụng.</p>
         </div>
       ) : matches.length === 0 ? (
         <div className="glass-card rounded-[2rem] p-12 text-center border border-white/40 shadow-sm">
           <div className="w-20 h-20 bg-surface-container-high rounded-full flex items-center justify-center mx-auto mb-6">
             <Search className="w-10 h-10 text-on-surface-variant opacity-50" />
           </div>
-          <h3 className="text-2xl font-black text-on-surface mb-2">No Matches Found</h3>
+          <h3 className="text-2xl font-black text-on-surface mb-2">Chưa tìm thấy ứng viên phù hợp</h3>
           <p className="text-on-surface-variant max-w-md mx-auto">
-            We couldn't find any candidates that match the requirements for this job. Try relaxing the requirements or check back later as new candidates join.
+            Hệ thống chưa tìm thấy CV phù hợp với tin tuyển dụng này. Bạn có thể điều chỉnh yêu cầu hoặc quay lại sau khi có thêm ứng viên mới.
           </p>
         </div>
       ) : (
@@ -168,7 +169,7 @@ export default function AISuggestionsPage() {
                     <div className="text-6xl font-black text-primary opacity-20 tracking-tighter">01</div>
                     <div className="mt-2 flex items-center gap-2 px-4 py-2 rounded-full bg-secondary/10 text-secondary border border-secondary/20">
                       <Star className="w-4 h-4 fill-secondary" />
-                      <span className="text-sm font-bold">Top Pick</span>
+                      <span className="text-sm font-bold">Phù hợp nhất</span>
                     </div>
                   </div>
                 </div>
@@ -176,12 +177,12 @@ export default function AISuggestionsPage() {
                 <div className="flex flex-col md:flex-row gap-8 items-start relative z-10">
                   <div className="relative shrink-0 mt-4">
                     <img 
-                      alt={topMatch.candidateName || "Candidate"} 
+                      alt={topMatch.candidateName || "Ứng viên"} 
                       className="w-32 h-32 md:w-48 md:h-48 rounded-[2rem] object-cover shadow-xl bg-surface-container-high" 
                       src={topMatch.candidateAvatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(topMatch.candidateName || "CV")}&background=0050d4&color=fff&size=200`} 
                     />
                     <div className="absolute -bottom-4 -right-4 w-16 h-16 rounded-full signature-gradient border-4 border-surface-container-lowest flex flex-col items-center justify-center text-white">
-                      <span className="text-[10px] uppercase font-bold leading-none">Score</span>
+                      <span className="text-[10px] uppercase font-bold leading-none">Điểm</span>
                       <span className="text-xl font-black">{topMatch.matchScore || 0}%</span>
                     </div>
                   </div>
@@ -190,34 +191,34 @@ export default function AISuggestionsPage() {
                     <h3 className="text-3xl font-black text-on-surface mb-2">{topMatch.candidateName || topMatch.cv.cvName}</h3>
                     <p className="text-primary font-bold text-sm mb-6 flex items-center gap-2">
                       <MapPin className="w-4 h-4" />
-                      {topMatch.candidateHeadline || "Open to Work"}
+                      {topMatch.candidateHeadline || "Sẵn sàng tìm việc"}
                     </p>
                     
                     <div className="bg-primary/5 rounded-2xl p-6 border border-primary/10 mb-8">
                       <div className="flex items-center gap-2 mb-3">
                         <Sparkles className="text-primary w-4 h-4 fill-primary/20" />
-                        <span className="font-bold text-on-surface text-sm uppercase tracking-wider">Why this candidate?</span>
+                        <span className="font-bold text-on-surface text-sm uppercase tracking-wider">Vì sao phù hợp?</span>
                       </div>
                       <p className="text-on-surface-variant leading-relaxed text-sm">
-                        This candidate was identified by our AI as the top match for your requirements. Their CV <strong>{topMatch.cv.cvName}</strong> demonstrated exceptional alignment with the job description and required skills.
+                        AI đánh giá ứng viên này là lựa chọn phù hợp nhất với yêu cầu tuyển dụng. CV <strong>{topMatch.cv.cvName}</strong> có mức độ tương đồng cao với mô tả công việc và các kỹ năng cần thiết.
                       </p>
                     </div>
                     
                     <div className="flex flex-wrap gap-3 mb-8">
                       {/* We don't have skills directly in CvRecommendationResponse yet, so we show generic badges or hide them */}
-                      <span className="px-4 py-2 rounded-full bg-surface-container-high text-on-surface text-xs font-bold uppercase tracking-widest">Highly Relevant</span>
-                      <span className="px-4 py-2 rounded-full bg-surface-container-high text-on-surface text-xs font-bold uppercase tracking-widest">AI Matched</span>
+                      <span className="px-4 py-2 rounded-full bg-surface-container-high text-on-surface text-xs font-bold uppercase tracking-widest">Rất phù hợp</span>
+                      <span className="px-4 py-2 rounded-full bg-surface-container-high text-on-surface text-xs font-bold uppercase tracking-widest">AI đề xuất</span>
                     </div>
                     
                     <div className="flex gap-4">
                       {topMatch.candidateId ? (
                         <Link href={`/recruiter/candidates/${topMatch.candidateId}?cvId=${topMatch.cv.id}`} className="flex-1 py-4 rounded-2xl signature-gradient text-white font-bold hover:opacity-90 transition-all flex items-center justify-center gap-2 shadow-lg shadow-primary/20">
-                          View Profile
+                          Xem hồ sơ
                           <ArrowRight className="w-5 h-5" />
                         </Link>
                       ) : (
                         <button className="flex-1 py-4 rounded-2xl bg-surface-container-high text-on-surface-variant font-bold cursor-not-allowed flex items-center justify-center gap-2">
-                          Profile Not Available
+                          Chưa có hồ sơ
                         </button>
                       )}
                       <button className="w-14 h-14 rounded-2xl border border-outline-variant flex items-center justify-center hover:bg-surface-container-low transition-all group">
@@ -234,18 +235,18 @@ export default function AISuggestionsPage() {
           <div className="lg:col-span-4 space-y-8">
             <div className="bg-secondary p-8 rounded-[2rem] text-white shadow-xl shadow-secondary/30 relative overflow-hidden">
               <div className="absolute -bottom-8 -right-8 w-32 h-32 bg-white/10 rounded-full blur-2xl"></div>
-              <h4 className="text-xl font-bold mb-6 relative z-10">Match Analytics</h4>
+              <h4 className="text-xl font-bold mb-6 relative z-10">Phân tích mức độ phù hợp</h4>
               
               <div className="space-y-6 relative z-10">
                 <div>
-                  <div className="flex justify-between text-xs font-bold uppercase tracking-widest mb-2 opacity-80">Overall Fit Score</div>
+                  <div className="flex justify-between text-xs font-bold uppercase tracking-widest mb-2 opacity-80">Điểm phù hợp tổng thể</div>
                   <div className="h-2 w-full bg-white/20 rounded-full overflow-hidden">
                     <div className="h-full bg-white transition-all duration-1000 ease-out" style={{ width: `${topMatch?.matchScore || 0}%` }}></div>
                   </div>
                 </div>
                 <div className="pt-4 mt-4 border-t border-white/10">
                   <p className="text-sm italic opacity-80 leading-relaxed">
-                    Scores are calculated using an advanced hybrid matching algorithm combining semantic vector search, full-text analysis, and exact skill matching.
+                    Điểm số được tính bằng thuật toán kết hợp tìm kiếm ngữ nghĩa, phân tích toàn văn và so khớp kỹ năng chính xác.
                   </p>
                 </div>
               </div>
@@ -260,7 +261,7 @@ export default function AISuggestionsPage() {
                 <div className="flex items-center gap-4 mb-6 relative z-10">
                   <div className="relative shrink-0">
                     <img 
-                      alt={secondaryMatch.candidateName || "Candidate"} 
+                      alt={secondaryMatch.candidateName || "Ứng viên"} 
                       className="w-16 h-16 rounded-2xl object-cover bg-surface-container-high" 
                       src={secondaryMatch.candidateAvatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(secondaryMatch.candidateName || "CV")}&background=6a37d4&color=fff&size=100`} 
                     />
@@ -270,17 +271,17 @@ export default function AISuggestionsPage() {
                   </div>
                   <div>
                     <h5 className="text-lg font-black text-on-surface leading-tight mb-1 line-clamp-1">{secondaryMatch.candidateName || secondaryMatch.cv.cvName}</h5>
-                    <p className="text-xs text-on-surface-variant font-bold uppercase tracking-wider line-clamp-1">{secondaryMatch.candidateHeadline || "Open to Work"}</p>
+                    <p className="text-xs text-on-surface-variant font-bold uppercase tracking-wider line-clamp-1">{secondaryMatch.candidateHeadline || "Sẵn sàng tìm việc"}</p>
                   </div>
                 </div>
-                <p className="text-sm text-on-surface-variant mb-6 line-clamp-2">Strong candidate showing excellent alignment with core requirements.</p>
+                <p className="text-sm text-on-surface-variant mb-6 line-clamp-2">Ứng viên có mức độ phù hợp tốt với các yêu cầu cốt lõi của vị trí.</p>
                 {secondaryMatch.candidateId ? (
                   <Link href={`/recruiter/candidates/${secondaryMatch.candidateId}?cvId=${secondaryMatch.cv.id}`} className="w-full py-3 rounded-xl bg-surface-container-high text-on-surface font-bold text-sm hover:bg-primary hover:text-white transition-all block text-center">
-                    View Details
+                    Xem chi tiết
                   </Link>
                 ) : (
                   <button className="w-full py-3 rounded-xl bg-surface-container-low text-on-surface-variant font-bold text-sm cursor-not-allowed">
-                    Profile Unavailable
+                    Chưa có hồ sơ
                   </button>
                 )}
               </div>
@@ -297,26 +298,26 @@ export default function AISuggestionsPage() {
                   </div>
                   <div className="flex justify-between items-start mb-6 relative z-10">
                     <img 
-                      alt={match.candidateName || "Candidate"} 
+                      alt={match.candidateName || "Ứng viên"} 
                       className="w-14 h-14 rounded-xl object-cover bg-surface-container-high" 
                       src={match.candidateAvatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(match.candidateName || "CV")}&background=0057bd&color=fff&size=100`} 
                     />
                     <div className="bg-primary/10 text-primary px-3 py-1 rounded-full text-xs font-black shadow-inner shadow-primary/5">
-                      {match.matchScore || 0}% Match
+                      Phù hợp {match.matchScore || 0}%
                     </div>
                   </div>
                   <h5 className="text-xl font-black text-on-surface mb-1 line-clamp-1 relative z-10">{match.candidateName || match.cv.cvName}</h5>
-                  <p className="text-xs text-secondary font-bold uppercase tracking-widest mb-4 line-clamp-1 relative z-10">{match.candidateHeadline || "Potential Candidate"}</p>
+                  <p className="text-xs text-secondary font-bold uppercase tracking-widest mb-4 line-clamp-1 relative z-10">{match.candidateHeadline || "Ứng viên tiềm năng"}</p>
                   <div className="p-4 bg-surface-container-low rounded-xl mb-6 min-h-[80px] relative z-10">
-                    <p className="text-sm text-on-surface-variant leading-relaxed line-clamp-2">Matches well with the technical specifications outlined in the job description.</p>
+                    <p className="text-sm text-on-surface-variant leading-relaxed line-clamp-2">Phù hợp với các yêu cầu kỹ thuật được nêu trong mô tả công việc.</p>
                   </div>
                   {match.candidateId ? (
                     <Link href={`/recruiter/candidates/${match.candidateId}?cvId=${match.cv.id}`} className="w-full py-3 rounded-xl border-2 border-primary/10 text-primary font-bold text-sm group-hover:bg-primary group-hover:text-white transition-all block text-center relative z-10">
-                      Explore Profile
+                      Xem hồ sơ
                     </Link>
                   ) : (
                     <button className="w-full py-3 rounded-xl border-2 border-outline-variant text-on-surface-variant font-bold text-sm cursor-not-allowed">
-                      Unavailable
+                      Chưa khả dụng
                     </button>
                   )}
                 </div>
@@ -329,7 +330,7 @@ export default function AISuggestionsPage() {
       {/* Contextual FAB */}
       <button className="fixed bottom-8 right-8 w-16 h-16 rounded-full signature-gradient text-white shadow-2xl shadow-primary/40 flex items-center justify-center hover:scale-110 active:scale-95 transition-all z-50 group">
         <Sparkles className="w-8 h-8 fill-white/20" />
-        <span className="absolute right-full mr-4 px-4 py-2 bg-inverse-surface text-white text-sm rounded-lg whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">AI Analysis Engine</span>
+        <span className="absolute right-full mr-4 px-4 py-2 bg-inverse-surface text-white text-sm rounded-lg whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">Bộ phân tích AI</span>
       </button>
     </div>
   );

@@ -38,11 +38,16 @@ function formatDate(value?: string | null): string {
   return date.toLocaleDateString("vi-VN");
 }
 
+function getCandidateInitial(application: ApplicationResponse): string {
+  return (application.candidateName ?? application.candidateEmail ?? "?").slice(0, 1).toUpperCase();
+}
+
 export default function PipelineKanban() {
   const [applications, setApplications] = useState<ApplicationResponse[]>([]);
   const [loading, setLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [updatingId, setUpdatingId] = useState<string | null>(null);
+  const [selectedJobId, setSelectedJobId] = useState<string>("all");
 
   useEffect(() => {
     let active = true;
@@ -70,9 +75,25 @@ export default function PipelineKanban() {
     [applications],
   );
 
-  const jobCount = useMemo(
-    () => new Set(activeApplications.map((application) => application.jobId)).size,
-    [activeApplications],
+  const jobOptions = useMemo(() => {
+    const jobs = new Map<string, { id: string; title: string; count: number }>();
+    activeApplications.forEach((application) => {
+      const current = jobs.get(application.jobId);
+      jobs.set(application.jobId, {
+        id: application.jobId,
+        title: application.jobTitle || "Tin tuyển dụng",
+        count: (current?.count ?? 0) + 1,
+      });
+    });
+
+    return Array.from(jobs.values()).sort((first, second) => first.title.localeCompare(second.title, "vi"));
+  }, [activeApplications]);
+
+  const visibleApplications = useMemo(
+    () => selectedJobId === "all"
+      ? activeApplications
+      : activeApplications.filter((application) => application.jobId === selectedJobId),
+    [activeApplications, selectedJobId],
   );
 
   const handleStatusChange = async (applicationId: string, status: ApplicationStatus) => {
@@ -92,23 +113,23 @@ export default function PipelineKanban() {
     <div className="max-w-[1400px] mx-auto min-h-[calc(100vh-80px)]">
       <div className="flex flex-col md:flex-row md:items-end justify-between mb-8 gap-4 pt-4">
         <div>
-          <span className="text-xs font-bold text-primary tracking-[0.2em] uppercase mb-2 block">Recruiter Pipeline</span>
+          <span className="text-xs font-bold text-primary tracking-[0.2em] uppercase mb-2 block">Pipeline tuyển dụng</span>
           <h1 className="text-4xl font-bold tracking-tight text-on-surface">Ứng viên đã nộp hồ sơ</h1>
           <p className="mt-2 text-sm text-on-surface-variant">
-            {activeApplications.length} đơn ứng tuyển từ {jobCount} tin tuyển dụng.
+            {activeApplications.length} đơn ứng tuyển từ {jobOptions.length} tin tuyển dụng.
           </p>
         </div>
         <div className="grid grid-cols-3 gap-3 text-center">
           <div className="rounded-xl bg-surface-container-lowest border border-outline-variant/20 px-4 py-3">
-            <p className="text-xl font-black text-on-surface">{activeApplications.length}</p>
+            <p className="text-xl font-black text-on-surface">{visibleApplications.length}</p>
             <p className="text-[10px] font-bold uppercase text-on-surface-variant">Tổng đơn</p>
           </div>
           <div className="rounded-xl bg-surface-container-lowest border border-outline-variant/20 px-4 py-3">
-            <p className="text-xl font-black text-on-surface">{applications.filter((item) => item.status === "INTERVIEW").length}</p>
+            <p className="text-xl font-black text-on-surface">{visibleApplications.filter((item) => item.status === "INTERVIEW").length}</p>
             <p className="text-[10px] font-bold uppercase text-on-surface-variant">Phỏng vấn</p>
           </div>
           <div className="rounded-xl bg-surface-container-lowest border border-outline-variant/20 px-4 py-3">
-            <p className="text-xl font-black text-on-surface">{applications.filter((item) => item.status === "HIRED").length}</p>
+            <p className="text-xl font-black text-on-surface">{visibleApplications.filter((item) => item.status === "HIRED").length}</p>
             <p className="text-[10px] font-bold uppercase text-on-surface-variant">Đã tuyển</p>
           </div>
         </div>
@@ -130,100 +151,132 @@ export default function PipelineKanban() {
           <p className="text-on-surface-variant">Khi candidate ứng tuyển, hồ sơ sẽ xuất hiện ở pipeline này.</p>
         </div>
       ) : (
-        <div className="overflow-x-auto flex gap-6 pb-6 items-start h-full">
-          {STAGES.map((stage) => {
-            const items = activeApplications.filter((application) => application.status === stage.status);
+        <>
+          <div className="mb-6 rounded-2xl border border-outline-variant/15 bg-surface-container-lowest/80 p-4">
+            <div className="mb-3 flex items-center gap-2 text-xs font-bold uppercase tracking-[0.16em] text-on-surface-variant">
+              <BriefcaseBusiness className="h-4 w-4" />
+              Lọc theo tin tuyển dụng
+            </div>
+            <div className="flex gap-2 overflow-x-auto pb-1">
+              <button
+                className={`shrink-0 rounded-full px-4 py-2 text-sm font-bold transition-all ${selectedJobId === "all" ? "bg-primary text-white shadow-sm" : "bg-surface-container-high text-on-surface-variant hover:text-on-surface"}`}
+                onClick={() => setSelectedJobId("all")}
+                type="button"
+              >
+                Tất cả ({activeApplications.length})
+              </button>
+              {jobOptions.map((job) => (
+                <button
+                  key={job.id}
+                  className={`shrink-0 rounded-full px-4 py-2 text-sm font-bold transition-all ${selectedJobId === job.id ? "bg-primary text-white shadow-sm" : "bg-surface-container-high text-on-surface-variant hover:text-on-surface"}`}
+                  onClick={() => setSelectedJobId(job.id)}
+                  type="button"
+                >
+                  {job.title} ({job.count})
+                </button>
+              ))}
+            </div>
+          </div>
 
-            return (
-              <div key={stage.status} className="flex-shrink-0 w-80">
-                <div className="flex items-center justify-between px-2 mb-4">
-                  <div className="flex items-center gap-2">
-                    <h2 className="font-bold text-on-surface">{stage.title}</h2>
-                    <span className="bg-surface-container-high text-on-surface-variant text-xs px-2 py-0.5 rounded-full font-bold">
-                      {items.length}
-                    </span>
-                  </div>
-                  <button type="button" className="text-on-surface-variant hover:text-primary" aria-label={`Tùy chọn ${stage.title}`}>
-                    <MoreHorizontal className="w-5 h-5" />
-                  </button>
-                </div>
+          <div className="overflow-x-auto flex gap-6 pb-6 items-start h-full">
+            {STAGES.map((stage) => {
+              const items = visibleApplications.filter((application) => application.status === stage.status);
 
-                <div className="space-y-4 min-h-[100px] pb-10">
-                  {items.length === 0 ? (
-                    <div className="border-2 border-dashed border-outline-variant/30 rounded-xl h-24 flex items-center justify-center text-on-surface-variant/50">
-                      <span className="text-xs uppercase tracking-widest font-bold">Trống</span>
+              return (
+                <div key={stage.status} className="flex-shrink-0 w-80">
+                  <div className="flex items-center justify-between px-2 mb-4">
+                    <div className="flex items-center gap-2">
+                      <h2 className="font-bold text-on-surface">{stage.title}</h2>
+                      <span className="bg-surface-container-high text-on-surface-variant text-xs px-2 py-0.5 rounded-full font-bold">
+                        {items.length}
+                      </span>
                     </div>
-                  ) : (
-                    items.map((application) => (
-                      <div
-                        key={application.id}
-                        className={`group bg-surface-container-lowest/80 backdrop-blur-md p-4 rounded-xl shadow-sm border border-outline-variant/10 hover:shadow-md transition-all border-l-4 ${stage.borderClass}`}
-                      >
-                        <div className="flex justify-between items-start gap-3 mb-3">
-                          <div className="flex items-center gap-3 min-w-0">
-                            <div className="w-10 h-10 rounded-xl bg-primary/10 text-primary flex items-center justify-center shrink-0 font-black">
-                              {(application.candidateName ?? application.candidateEmail ?? "?").slice(0, 1).toUpperCase()}
-                            </div>
-                            <div className="min-w-0">
-                              <h3 className="text-sm font-bold text-on-surface truncate">
-                                {application.candidateName ?? "Ứng viên"}
-                              </h3>
-                              <p className="text-[11px] text-on-surface-variant truncate">{application.jobTitle}</p>
-                            </div>
-                          </div>
-                          {application.aiScore != null && (
-                            <div className="flex flex-col items-end gap-1">
-                              <span className="text-[9px] font-black uppercase text-primary tracking-widest">AI Match</span>
-                              <span className="signature-gradient text-white text-[10px] font-black px-2 py-0.5 rounded-full shadow-sm">
-                                {Math.round(application.aiScore)}%
-                              </span>
-                            </div>
-                          )}
-                        </div>
+                    <button type="button" className="text-on-surface-variant hover:text-primary" aria-label={`Tùy chọn ${stage.title}`}>
+                      <MoreHorizontal className="w-5 h-5" />
+                    </button>
+                  </div>
 
-                        <div className="space-y-2 text-[11px] text-on-surface-variant">
-                          {application.candidateEmail && (
-                            <div className="flex items-center gap-2 min-w-0">
-                              <Mail className="w-3.5 h-3.5 shrink-0" />
-                              <span className="truncate">{application.candidateEmail}</span>
-                            </div>
-                          )}
-                          {application.candidatePhone && (
-                            <div className="flex items-center gap-2">
-                              <Phone className="w-3.5 h-3.5" />
-                              <span>{application.candidatePhone}</span>
-                            </div>
-                          )}
-                          <div className="flex items-center gap-2">
-                            <Clock className="w-3.5 h-3.5" />
-                            <span>Nộp ngày {formatDate(application.appliedAt)}</span>
-                          </div>
-                          <div className="flex items-center gap-2">
-                            <FileText className="w-3.5 h-3.5" />
-                            <span className="truncate">{application.cvName ?? "CV đính kèm"}</span>
-                          </div>
-                        </div>
-
-                        <select
-                          value={application.status}
-                          onChange={(event) => void handleStatusChange(application.id, event.target.value as ApplicationStatus)}
-                          disabled={updatingId === application.id}
-                          className="mt-4 w-full rounded-xl border border-outline-variant/20 bg-surface-container-high/60 px-3 py-2 text-xs font-bold text-on-surface outline-none focus:ring-2 focus:ring-primary/30 disabled:opacity-60"
-                        >
-                          {STATUS_OPTIONS.map((status) => (
-                            <option key={status} value={status}>
-                              {STATUS_LABELS[status]}
-                            </option>
-                          ))}
-                        </select>
+                  <div className="space-y-4 min-h-[100px] pb-10">
+                    {items.length === 0 ? (
+                      <div className="border-2 border-dashed border-outline-variant/30 rounded-xl h-24 flex items-center justify-center text-on-surface-variant/50">
+                        <span className="text-xs uppercase tracking-widest font-bold">Trống</span>
                       </div>
-                    ))
-                  )}
+                    ) : (
+                      items.map((application) => (
+                        <div
+                          key={application.id}
+                          className={`group bg-surface-container-lowest/80 backdrop-blur-md p-4 rounded-xl shadow-sm border border-outline-variant/10 hover:shadow-md transition-all border-l-4 ${stage.borderClass}`}
+                        >
+                          <div className="flex justify-between items-start gap-3 mb-3">
+                            <div className="flex items-center gap-3 min-w-0">
+                              <div className="w-10 h-10 rounded-xl bg-primary/10 text-primary flex items-center justify-center shrink-0 font-black">
+                                {getCandidateInitial(application)}
+                              </div>
+                              <div className="min-w-0">
+                                <h3 className="text-sm font-bold text-on-surface truncate">
+                                  {application.candidateName ?? "Ứng viên"}
+                                </h3>
+                                <p className="text-[11px] text-on-surface-variant truncate">{application.candidateEmail}</p>
+                              </div>
+                            </div>
+                            {application.aiScore != null && (
+                              <div className="flex flex-col items-end gap-1">
+                                <span className="text-[9px] font-black uppercase text-primary tracking-widest">AI Match</span>
+                                <span className="signature-gradient text-white text-[10px] font-black px-2 py-0.5 rounded-full shadow-sm">
+                                  {Math.round(application.aiScore)}%
+                                </span>
+                              </div>
+                            )}
+                          </div>
+
+                          <div className="space-y-2 text-[11px] text-on-surface-variant">
+                            <div className="flex items-center gap-2 rounded-lg bg-primary/5 px-3 py-2 text-primary">
+                              <BriefcaseBusiness className="w-3.5 h-3.5 shrink-0" />
+                              <span className="truncate font-bold">{application.jobTitle || "Tin tuyển dụng"}</span>
+                            </div>
+                            {application.candidateEmail && (
+                              <div className="flex items-center gap-2 min-w-0">
+                                <Mail className="w-3.5 h-3.5 shrink-0" />
+                                <span className="truncate">{application.candidateEmail}</span>
+                              </div>
+                            )}
+                            {application.candidatePhone && (
+                              <div className="flex items-center gap-2">
+                                <Phone className="w-3.5 h-3.5" />
+                                <span>{application.candidatePhone}</span>
+                              </div>
+                            )}
+                            <div className="flex items-center gap-2">
+                              <Clock className="w-3.5 h-3.5" />
+                              <span>Nộp ngày {formatDate(application.appliedAt)}</span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <FileText className="w-3.5 h-3.5" />
+                              <span className="truncate">{application.cvName ?? "CV đính kèm"}</span>
+                            </div>
+                          </div>
+
+                          <select
+                            value={application.status}
+                            onChange={(event) => void handleStatusChange(application.id, event.target.value as ApplicationStatus)}
+                            disabled={updatingId === application.id}
+                            className="mt-4 w-full rounded-xl border border-outline-variant/20 bg-surface-container-high/60 px-3 py-2 text-xs font-bold text-on-surface outline-none focus:ring-2 focus:ring-primary/30 disabled:opacity-60"
+                          >
+                            {STATUS_OPTIONS.map((status) => (
+                              <option key={status} value={status}>
+                                {STATUS_LABELS[status]}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+                      ))
+                    )}
+                  </div>
                 </div>
-              </div>
-            );
-          })}
-        </div>
+              );
+            })}
+          </div>
+        </>
       )}
     </div>
   );

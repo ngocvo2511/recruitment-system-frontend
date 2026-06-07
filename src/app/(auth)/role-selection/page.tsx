@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { ArrowRight, User, Briefcase } from 'lucide-react';
+import { BRAND_NAME } from '@/lib/brand';
 
 export default function RoleSelection() {
   return (
@@ -15,7 +16,7 @@ export default function RoleSelection() {
           </div>
           <h1 className="text-4xl md:text-5xl font-extrabold tracking-[-0.02em] text-on-surface">Choose Your Journey</h1>
           <p className="text-lg text-on-surface-variant max-w-xl mx-auto">
-            Select how you want to use The Curator. You can always change this later in your account settings.
+            Select how you want to use {BRAND_NAME}. You can always change this later in your account settings.
           </p>
         </div>
 
