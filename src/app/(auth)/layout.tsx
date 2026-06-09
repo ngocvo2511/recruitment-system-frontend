@@ -15,8 +15,8 @@ export default function AuthLayout({
             {BRAND_NAME}
           </Link>
           <div className="hidden md:flex items-center gap-6">
-            <Link className="text-slate-500 font-medium hover:opacity-80 transition-all duration-300" href="#">Help</Link>
-            <Link className="text-blue-600 font-bold border-b-2 border-blue-600 px-1" href="/login">Sign In</Link>
+            <Link className="text-slate-500 font-medium hover:opacity-80 transition-all duration-300" href="#">Trợ giúp</Link>
+            <Link className="text-blue-600 font-bold border-b-2 border-blue-600 px-1" href="/login">Đăng nhập</Link>
           </div>
         </div>
       </header>
@@ -29,9 +29,9 @@ export default function AuthLayout({
         <div className="flex flex-col md:flex-row justify-between items-center px-12 gap-6 w-full max-w-7xl mx-auto">
           <div className="text-lg font-bold text-slate-900">{BRAND_NAME}</div>
           <div className="flex gap-8">
-            <Link className="text-sm tracking-wider uppercase text-slate-500 hover:text-blue-500 transition-colors" href="#">Privacy Policy</Link>
-            <Link className="text-sm tracking-wider uppercase text-slate-500 hover:text-blue-500 transition-colors" href="#">Terms of Service</Link>
-            <Link className="text-sm tracking-wider uppercase text-slate-500 hover:text-blue-500 transition-colors" href="#">Contact Support</Link>
+            <Link className="text-sm tracking-wider uppercase text-slate-500 hover:text-blue-500 transition-colors" href="#">Chính sách bảo mật</Link>
+            <Link className="text-sm tracking-wider uppercase text-slate-500 hover:text-blue-500 transition-colors" href="#">Điều khoản dịch vụ</Link>
+            <Link className="text-sm tracking-wider uppercase text-slate-500 hover:text-blue-500 transition-colors" href="#">Liên hệ hỗ trợ</Link>
           </div>
           <div className="text-sm tracking-wider uppercase text-slate-500">
             © 2026 {BRAND_NAME}. Bảo lưu mọi quyền.

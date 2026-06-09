@@ -11,7 +11,7 @@ const navItems = [
   { href: "/recruiter/dashboard", label: "Tổng quan", icon: LayoutDashboard },
   { href: "/recruiter/jobs", label: "Tin tuyển dụng", icon: Briefcase },
   { href: "/recruiter/company", label: "Công ty", icon: Building2 },
-  { href: "/recruiter/pipeline", label: "Pipeline", icon: LayoutDashboard },
+  { href: "/recruiter/pipeline", label: "Quy trình", icon: LayoutDashboard },
   { href: "/recruiter/candidates", label: "Ứng viên", icon: Users },
   { href: "/recruiter/ai-suggest", label: "Gợi ý AI", icon: Sparkles },
 ];
@@ -77,7 +77,7 @@ export default function RecruiterLayout({
         <div className="flex items-center gap-4">
           <div className="hidden lg:flex items-center bg-surface-container-high rounded-full px-4 py-1.5 gap-2 border border-outline-variant/15">
             <Search className="text-on-surface-variant w-4 h-4" />
-            <input className="bg-transparent border-none focus:ring-0 text-sm md:w-48 text-on-surface outline-none" placeholder="Tìm nhanh..." type="text" />
+            <input className="bg-transparent border-none focus:ring-0 text-sm md:w-48 text-on-surface outline-none" placeholder="Tìm kiếm..." type="text" />
           </div>
           <button className="p-2 text-slate-500 hover:bg-blue-50/50 rounded-full transition-all duration-300" title="Thông báo">
             <Bell className="w-5 h-5" />

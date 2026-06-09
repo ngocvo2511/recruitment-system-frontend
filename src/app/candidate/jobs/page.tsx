@@ -33,10 +33,10 @@ function formatSalary(job: JobResponse): string {
     return `${min} - ${max}${currency}`;
   }
   if (min != null) {
-    return `From ${min}${currency}`;
+    return `Từ ${min}${currency}`;
   }
   if (max != null) {
-    return `Up to ${max}${currency}`;
+    return `Đến ${max}${currency}`;
   }
   return "--";
 }
@@ -62,7 +62,7 @@ export default function CandidateJobsPage() {
         })
         .catch((error: unknown) => {
           if (!active) return;
-          const message = error instanceof ApiError ? error.message : "Could not load jobs.";
+          const message = error instanceof ApiError ? error.message : "Không thể tải tin tuyển dụng.";
           setErrorMessage(message);
           setJobs([]);
         })
@@ -83,7 +83,7 @@ export default function CandidateJobsPage() {
         })
         .catch((error: unknown) => {
           if (!active) return;
-          const message = error instanceof ApiError ? error.message : "Could not search jobs.";
+          const message = error instanceof ApiError ? error.message : "Không thể tìm kiếm tin tuyển dụng.";
           setErrorMessage(message);
           setJobs([]);
         })
@@ -213,7 +213,7 @@ export default function CandidateJobsPage() {
                 <div className="flex-grow">
                   <div className="flex flex-wrap items-center gap-3 mb-1">
                     <h3 className="text-xl font-bold group-hover:text-primary transition-colors text-on-surface">{job.title}</h3>
-                    {idx === 0 && <span className="px-2 py-0.5 bg-green-100 text-green-700 text-[10px] font-bold uppercase rounded">Urgent</span>}
+                    {idx === 0 && <span className="px-2 py-0.5 bg-green-100 text-green-700 text-[10px] font-bold uppercase rounded">Gấp</span>}
                     {matchScore != null && (
                       <span className="flex items-center gap-1 px-3 py-1 signature-gradient text-white text-[11px] font-black uppercase rounded-full shadow-md shadow-primary/20">
                         <Sparkles className="w-3 h-3" />
@@ -222,7 +222,7 @@ export default function CandidateJobsPage() {
                     )}
                   </div>
                   <div className="flex flex-wrap gap-x-6 gap-y-2 text-sm text-on-surface-variant font-medium mt-2">
-                    <span className="flex items-center gap-1"><Building2 className="w-4 h-4"/> {job.companyName ?? "Company"}</span>
+                    <span className="flex items-center gap-1"><Building2 className="w-4 h-4"/> {job.companyName ?? "Công ty"}</span>
                     <span className="flex items-center gap-1"><MapPin className="w-4 h-4"/> {job.location ?? "--"}</span>
                     <span className="flex items-center gap-1"><Clock className="w-4 h-4"/> {formatDate(job.publishedAt ?? job.createdAt)}</span>
                   </div>

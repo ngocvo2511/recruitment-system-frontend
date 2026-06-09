@@ -18,13 +18,13 @@ function ResetPasswordForm() {
     return 1; // Weak
   }, [password]);
 
-  const strengthLabel = strength === 3 ? "Strong" : strength === 2 ? "Medium" : strength === 1 ? "Weak" : "";
+  const strengthLabel = strength === 3 ? "Mạnh" : strength === 2 ? "Trung bình" : strength === 1 ? "Yếu" : "";
   const strengthWidth = strength === 3 ? "w-[100%]" : strength === 2 ? "w-[50%]" : strength === 1 ? "w-[20%]" : "w-0";
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (password !== confirmPassword) {
-      alert("Passwords do not match!");
+      alert("Mật khẩu không khớp!");
       return;
     }
     // Mock success -> redirect
@@ -34,15 +34,15 @@ function ResetPasswordForm() {
   return (
     <div className="glass-card w-full max-w-[480px] p-10 md:p-12 rounded-[1.5rem] shadow-[0_40px_80px_rgba(0,0,0,0.04)] border border-white/20 animate-fade-in-up">
       <header className="mb-10">
-        <h1 className="text-3xl font-extrabold tracking-[-0.02em] text-on-surface mb-3">Reset Password</h1>
-        <p className="text-on-surface-variant text-lg">Create a secure new password for your professional profile.</p>
+        <h1 className="text-3xl font-extrabold tracking-[-0.02em] text-on-surface mb-3">Đặt Lại Mật Khẩu</h1>
+        <p className="text-on-surface-variant text-lg">Tạo mật khẩu mới an toàn cho hồ sơ chuyên nghiệp của bạn.</p>
       </header>
 
       <form className="space-y-8" onSubmit={handleSubmit}>
         {/* New Password Field */}
         <div className="space-y-2">
           <label className="block text-xs font-bold uppercase tracking-[0.05em] text-on-surface-variant ml-1" htmlFor="new_password">
-            New Password
+            Mật Khẩu Mới
           </label>
           <div className="relative">
             <input 
@@ -67,7 +67,7 @@ function ResetPasswordForm() {
           {password.length > 0 && (
             <div className="pt-3 animate-fade-in-up">
               <div className="flex justify-between items-center mb-2">
-                <span className="text-[10px] font-bold uppercase tracking-wider text-on-surface-variant">Security Strength</span>
+                <span className="text-[10px] font-bold uppercase tracking-wider text-on-surface-variant">Độ Bảo Mật</span>
                 <span className={`text-[10px] font-bold uppercase tracking-wider ${strength === 3 ? 'text-secondary' : strength === 2 ? 'text-blue-500' : 'text-error'}`}>
                   {strengthLabel}
                 </span>
@@ -82,7 +82,7 @@ function ResetPasswordForm() {
         {/* Confirm Password Field */}
         <div className="space-y-2">
           <label className="block text-xs font-bold uppercase tracking-[0.05em] text-on-surface-variant ml-1" htmlFor="confirm_password">
-            Confirm Password
+            Xác Nhận Mật Khẩu
           </label>
           <div className="relative">
             <input 
@@ -105,7 +105,7 @@ function ResetPasswordForm() {
             type="submit"
             disabled={password.length === 0 || password !== confirmPassword}
           >
-            Reset Password
+            Đặt Lại Mật Khẩu
           </button>
         </div>
       </form>
@@ -113,7 +113,7 @@ function ResetPasswordForm() {
       <footer className="mt-10 text-center">
         <Link href="/login" className="text-sm font-semibold text-primary hover:text-secondary transition-colors inline-flex items-center gap-2">
           <ArrowLeft className="w-5 h-5"/>
-          Back to Sign In
+          Quay lại Đăng nhập
         </Link>
       </footer>
     </div>
