@@ -147,3 +147,10 @@ export function createRecruiterProfile(
     body: JSON.stringify(payload),
   });
 }
+
+export function changePassword(data: { oldPassword: string; newPassword: string }): Promise<string> {
+  return request<string>("/api/auth/change-password", {
+    method: "POST",
+    body: JSON.stringify(data),
+  });
+}
