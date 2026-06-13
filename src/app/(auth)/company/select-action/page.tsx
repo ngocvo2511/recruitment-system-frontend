@@ -20,8 +20,8 @@ export default function SelectCompanyActionPage() {
             <div className="w-12 h-1.5 rounded-full bg-surface-container-highest"></div>
             <div className="w-12 h-1.5 rounded-full bg-surface-container-highest"></div>
           </div>
-          <h1 className="text-4xl md:text-5xl font-extrabold tracking-[-0.02em] text-on-surface">Company Setup</h1>
-          <p className="text-lg text-on-surface-variant max-w-xl mx-auto">Select how you want to join the platform as a recruiter. Establish a new brand or connect to an existing one.</p>
+          <h1 className="text-4xl md:text-5xl font-extrabold tracking-[-0.02em] text-on-surface">Thiết Lập Công Ty</h1>
+          <p className="text-lg text-on-surface-variant max-w-xl mx-auto">Chọn cách bạn muốn tham gia nền tảng với tư cách nhà tuyển dụng. Thiết lập thương hiệu mới hoặc kết nối với thương hiệu có sẵn.</p>
         </div>
 
         {/* Selection Grid */}
@@ -42,24 +42,24 @@ export default function SelectCompanyActionPage() {
                 <Building2 className="text-on-secondary w-8 h-8" />
               </div>
               <div className="space-y-3">
-                <h2 className="text-2xl font-bold text-on-surface">Create New Company</h2>
-                <p className="text-on-surface-variant leading-relaxed">Set up a new organization and begin establishing your employer branding on the platform.</p>
+                <h2 className="text-2xl font-bold text-on-surface">Tạo Công Ty Mới</h2>
+                <p className="text-on-surface-variant leading-relaxed">Thiết lập tổ chức mới và bắt đầu xây dựng thương hiệu nhà tuyển dụng trên nền tảng.</p>
               </div>
               <div className="pt-4 border-t border-outline-variant/10">
                 <ul className="space-y-3">
                   <li className="flex items-center gap-3 text-sm text-on-surface-variant">
                     <CheckCircle2 className="text-secondary w-5 h-5" />
-                    Build verified profile
+                    Xây dựng hồ sơ đã xác minh
                   </li>
                   <li className="flex items-center gap-3 text-sm text-on-surface-variant">
                     <CheckCircle2 className="text-secondary w-5 h-5" />
-                    Manage team permissions
+                    Quản lý quyền thành viên trong nhóm
                   </li>
                 </ul>
               </div>
             </div>
             <div className="mt-8 flex items-center text-secondary font-bold group-hover:translate-x-2 transition-transform duration-300 relative z-10">
-              Register Company
+              Đăng Ký Công Ty
               <ArrowRight className="w-5 h-5 ml-2" />
             </div>
           </button>
@@ -74,24 +74,24 @@ export default function SelectCompanyActionPage() {
                 <Users className="text-on-primary w-8 h-8" />
               </div>
               <div className="space-y-3">
-                <h2 className="text-2xl font-bold text-on-surface">Join Existing Company</h2>
-                <p className="text-on-surface-variant leading-relaxed">Connect with your team and start recruiting together under your established brand.</p>
+                <h2 className="text-2xl font-bold text-on-surface">Tham Gia Công Ty Có Sẵn</h2>
+                <p className="text-on-surface-variant leading-relaxed">Kết nối với nhóm của bạn và bắt đầu tuyển dụng cùng nhau dưới thương hiệu đã thiết lập.</p>
               </div>
               <div className="pt-4 border-t border-outline-variant/10">
                 <ul className="space-y-3">
                   <li className="flex items-center gap-3 text-sm text-on-surface-variant">
                     <CheckCircle2 className="text-primary w-5 h-5" />
-                    Access team templates
+                    Truy cập mẫu nhóm
                   </li>
                   <li className="flex items-center gap-3 text-sm text-on-surface-variant">
                     <CheckCircle2 className="text-primary w-5 h-5" />
-                    Shared candidate pipelines
+                    Pipeline ứng viên chung
                   </li>
                 </ul>
               </div>
             </div>
             <div className="mt-8 flex items-center text-primary font-bold group-hover:translate-x-2 transition-transform duration-300">
-              Find Your Company
+              Tìm Công Ty Của Bạn
               <ArrowRight className="w-5 h-5 ml-2" />
             </div>
           </button>
@@ -101,7 +101,7 @@ export default function SelectCompanyActionPage() {
         {/* Additional Help */}
         <div className="pt-8">
           <p className="text-sm text-slate-500 font-medium tracking-wider uppercase">
-            Already have an account? <Link className="text-primary hover:underline underline-offset-4" href="/login">Log in here</Link>
+            Bạn đã có tài khoản? <Link className="text-primary hover:underline underline-offset-4" href="/login">Đăng nhập tại đây</Link>
           </p>
         </div>
       </div>

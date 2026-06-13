@@ -100,7 +100,7 @@ export default function CandidateCvDetailPage() {
       } else if (error instanceof ApiError) {
         setErrorMessage(error.message);
       } else {
-        setErrorMessage("Could not load review data.");
+        setErrorMessage("Không thể tải dữ liệu đánh giá.");
       }
     } finally {
       setLoadingReview(false);
@@ -115,7 +115,7 @@ export default function CandidateCvDetailPage() {
       const list = await getMyCvs();
       const found = list.find((item) => item.id === cvId);
       if (!found) {
-        setErrorMessage("CV not found in your account.");
+        setErrorMessage("Không tìm thấy CV trong tài khoản của bạn.");
         setCvItem(null);
         return;
       }
@@ -129,7 +129,7 @@ export default function CandidateCvDetailPage() {
         if (error instanceof ApiError) {
           setErrorMessage(error.message);
         } else {
-          setErrorMessage("Could not load extraction status.");
+          setErrorMessage("Không thể tải trạng thái trích xuất.");
         }
       }
 
@@ -160,7 +160,7 @@ export default function CandidateCvDetailPage() {
       if (error instanceof ApiError) {
         setErrorMessage(error.message);
       } else {
-        setErrorMessage("Could not open this CV.");
+        setErrorMessage("Không thể mở CV này.");
       }
     } finally {
       setOpeningCv(false);
@@ -178,7 +178,7 @@ export default function CandidateCvDetailPage() {
       if (error instanceof ApiError) {
         setErrorMessage(error.message);
       } else {
-        setErrorMessage("Could not generate review.");
+        setErrorMessage("Không thể tạo đánh giá.");
       }
     } finally {
       setCreatingReview(false);
@@ -192,19 +192,19 @@ export default function CandidateCvDetailPage() {
           <nav className="flex flex-col gap-1">
             <Link href="/candidate/profile" className="flex items-center gap-3 px-4 py-3 rounded-xl text-on-surface-variant hover:bg-surface-container-high transition-colors">
               <User className="w-5 h-5" />
-              <span className="font-medium">Personal Info</span>
+              <span className="font-medium">Thông tin cá nhân</span>
             </Link>
             <Link href="/candidate/cv" className="flex items-center gap-3 px-4 py-3 rounded-xl bg-primary-container/20 text-primary font-bold">
               <FileText className="w-5 h-5 fill-primary/20" />
-              <span>CV Management</span>
+              <span>Quản lý CV</span>
             </Link>
             <Link href="#" className="flex items-center gap-3 px-4 py-3 rounded-xl text-on-surface-variant hover:bg-surface-container-high transition-colors">
               <Lightbulb className="w-5 h-5" />
-              <span className="font-medium">AI Insights</span>
+              <span className="font-medium">Gợi ý AI</span>
             </Link>
             <Link href="#" className="flex items-center gap-3 px-4 py-3 rounded-xl text-on-surface-variant hover:bg-surface-container-high transition-colors">
               <Settings className="w-5 h-5" />
-              <span className="font-medium">Settings</span>
+              <span className="font-medium">Cài đặt</span>
             </Link>
           </nav>
         </aside>
@@ -217,7 +217,7 @@ export default function CandidateCvDetailPage() {
               className="inline-flex items-center gap-2 text-sm font-bold text-on-surface-variant hover:text-on-surface"
             >
               <ArrowLeft className="w-4 h-4" />
-              Back to CV list
+              Quay lại danh sách CV
             </button>
           </div>
 
@@ -230,11 +230,11 @@ export default function CandidateCvDetailPage() {
           {loadingPage ? (
             <div className="glass-card rounded-[2rem] p-8 text-on-surface-variant text-sm flex items-center gap-2">
               <LoaderCircle className="w-4 h-4 animate-spin" />
-              Loading CV details...
+              Đang tải chi tiết CV...
             </div>
           ) : !cvItem ? (
             <div className="glass-card rounded-[2rem] p-8 text-on-surface-variant text-sm">
-              CV not found.
+              Không tìm thấy CV.
             </div>
           ) : (
             <>
@@ -242,13 +242,13 @@ export default function CandidateCvDetailPage() {
                 <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
                   <div>
                     <h1 className="text-2xl md:text-3xl font-extrabold text-on-surface break-all">{cvItem.cvName}</h1>
-                    <p className="text-on-surface-variant text-sm mt-1">Uploaded on {formatDate(cvItem.uploadedAt)}</p>
+                    <p className="text-on-surface-variant text-sm mt-1">Đã tải lên vào {formatDate(cvItem.uploadedAt)}</p>
                   </div>
 
                   <div className="flex flex-wrap gap-2">
                     {cvItem.isDefault && (
                       <span className="bg-secondary/10 text-secondary text-[10px] font-black px-3 py-1 rounded-full tracking-widest">
-                        Default
+                        Mặc định
                       </span>
                     )}
                     {status && (
@@ -267,7 +267,7 @@ export default function CandidateCvDetailPage() {
                     className="inline-flex items-center gap-2 signature-gradient text-white px-4 py-2 rounded-xl text-sm font-bold disabled:opacity-60"
                   >
                     {openingCv ? <LoaderCircle className="w-4 h-4 animate-spin" /> : <Eye className="w-4 h-4" />}
-                    View CV
+                    Xem CV
                   </button>
                 </div>
 
@@ -282,7 +282,7 @@ export default function CandidateCvDetailPage() {
                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                   <div className="flex items-center gap-2">
                     <Sparkles className="w-5 h-5 text-primary" />
-                    <h2 className="text-xl font-bold text-on-surface">AI Review</h2>
+                    <h2 className="text-xl font-bold text-on-surface">Đánh giá AI</h2>
                   </div>
 
                   <div className="flex gap-2">
@@ -292,7 +292,7 @@ export default function CandidateCvDetailPage() {
                       disabled={loadingReview || creatingReview}
                       className="px-3 py-2 rounded-lg text-xs font-bold border border-outline/30 text-on-surface-variant hover:bg-surface-container-high disabled:opacity-60"
                     >
-                      {loadingReview ? "Refreshing..." : "Refresh"}
+                      {loadingReview ? "Đang làm mới..." : "Làm mới"}
                     </button>
                     <button
                       type="button"
@@ -300,27 +300,27 @@ export default function CandidateCvDetailPage() {
                       disabled={status !== "COMPLETED" || creatingReview}
                       className="signature-gradient text-white px-4 py-2 rounded-lg text-xs font-bold disabled:opacity-60"
                     >
-                      {creatingReview ? "Generating..." : "Generate review"}
+                      {creatingReview ? "Đang tạo..." : "Tạo đánh giá"}
                     </button>
                   </div>
                 </div>
 
                 {status !== "COMPLETED" && (
                   <div className="text-sm text-on-surface-variant bg-surface-container-high rounded-xl p-3">
-                    Review is available only when CV extraction is completed.
+                    Đánh giá chỉ khả dụng khi trích xuất CV hoàn tất.
                   </div>
                 )}
 
                 {loadingReview && (
                   <div className="text-sm text-on-surface-variant flex items-center gap-2 py-2">
                     <LoaderCircle className="w-4 h-4 animate-spin" />
-                    Loading review...
+                    Đang tải đánh giá...
                   </div>
                 )}
 
                 {!loadingReview && reviewNotFound && status === "COMPLETED" && (
                   <div className="text-sm text-on-surface-variant bg-surface-container-high rounded-xl p-3">
-                    No review yet for this CV. Click Generate review to create one.
+                    Chưa có đánh giá cho CV này. Bấm Tạo đánh giá để tạo.
                   </div>
                 )}
 
@@ -332,8 +332,8 @@ export default function CandidateCvDetailPage() {
                         {review.fitScore != null ? "%" : ""}
                       </div>
                       <div className="text-xs text-on-surface-variant">
-                        <p>Status: {review.status}</p>
-                        <p>Generated: {review.createdAt ? formatDate(review.createdAt) : "--"}</p>
+                        <p>Trạng thái: {review.status}</p>
+                        <p>Đã tạo: {review.createdAt ? formatDate(review.createdAt) : "--"}</p>
                       </div>
                     </div>
 
@@ -351,7 +351,7 @@ export default function CandidateCvDetailPage() {
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                       <div className="rounded-xl border border-surface-container-high p-3">
-                        <p className="text-[11px] font-black uppercase tracking-wider text-on-surface-variant mb-2">Strengths</p>
+                        <p className="text-[11px] font-black uppercase tracking-wider text-on-surface-variant mb-2">Điểm mạnh</p>
                         {reviewStrengths.length > 0 ? (
                           <ul className="space-y-1 text-sm text-on-surface-variant">
                             {reviewStrengths.slice(0, 5).map((item) => (
@@ -359,12 +359,12 @@ export default function CandidateCvDetailPage() {
                             ))}
                           </ul>
                         ) : (
-                          <p className="text-sm text-on-surface-variant">No data</p>
+                          <p className="text-sm text-on-surface-variant">Không có dữ liệu</p>
                         )}
                       </div>
 
                       <div className="rounded-xl border border-surface-container-high p-3">
-                        <p className="text-[11px] font-black uppercase tracking-wider text-on-surface-variant mb-2">Weaknesses</p>
+                        <p className="text-[11px] font-black uppercase tracking-wider text-on-surface-variant mb-2">Điểm yếu</p>
                         {reviewWeaknesses.length > 0 ? (
                           <ul className="space-y-1 text-sm text-on-surface-variant">
                             {reviewWeaknesses.slice(0, 5).map((item) => (
@@ -372,12 +372,12 @@ export default function CandidateCvDetailPage() {
                             ))}
                           </ul>
                         ) : (
-                          <p className="text-sm text-on-surface-variant">No data</p>
+                          <p className="text-sm text-on-surface-variant">Không có dữ liệu</p>
                         )}
                       </div>
 
                       <div className="rounded-xl border border-surface-container-high p-3">
-                        <p className="text-[11px] font-black uppercase tracking-wider text-on-surface-variant mb-2">Improvements</p>
+                        <p className="text-[11px] font-black uppercase tracking-wider text-on-surface-variant mb-2">Điểm cần cải thiện</p>
                         {reviewImprovements.length > 0 ? (
                           <ul className="space-y-1 text-sm text-on-surface-variant">
                             {reviewImprovements.slice(0, 5).map((item) => (
@@ -385,12 +385,12 @@ export default function CandidateCvDetailPage() {
                             ))}
                           </ul>
                         ) : (
-                          <p className="text-sm text-on-surface-variant">No data</p>
+                          <p className="text-sm text-on-surface-variant">Không có dữ liệu</p>
                         )}
                       </div>
 
                       <div className="rounded-xl border border-surface-container-high p-3">
-                        <p className="text-[11px] font-black uppercase tracking-wider text-on-surface-variant mb-2">Action Plan</p>
+                        <p className="text-[11px] font-black uppercase tracking-wider text-on-surface-variant mb-2">Kế hoạch hành động</p>
                         {reviewActionPlan.length > 0 ? (
                           <ul className="space-y-1 text-sm text-on-surface-variant">
                             {reviewActionPlan.slice(0, 5).map((item) => (
@@ -398,7 +398,7 @@ export default function CandidateCvDetailPage() {
                             ))}
                           </ul>
                         ) : (
-                          <p className="text-sm text-on-surface-variant">No data</p>
+                          <p className="text-sm text-on-surface-variant">Không có dữ liệu</p>
                         )}
                       </div>
                     </div>

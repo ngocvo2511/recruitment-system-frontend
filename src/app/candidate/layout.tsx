@@ -1,11 +1,12 @@
 "use client";
 
 import Link from "next/link";
-import { Bell } from "lucide-react";
+import { Bell, LogOut } from "lucide-react";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { BRAND_NAME } from "@/lib/brand";
 import { clearAuthSession, getHomePathForAccount, getStoredAccountType, getStoredToken, isTokenExpired } from "@/lib/authSession";
+
 
 const navItems = [
   { href: "/candidate/dashboard", label: "Tổng quan" },
@@ -109,6 +110,16 @@ export default function CandidateLayout({
             <div className="h-10 w-10 rounded-full overflow-hidden border-2 border-primary/20 hover:scale-105 transition-transform">
               <img alt="User profile avatar" className="w-full h-full object-cover" src="https://i.pravatar.cc/150?img=1" />
             </div>
+            <button 
+              onClick={() => {
+                clearAuthSession();
+                router.replace("/login?role=candidate");
+              }}
+              className="flex items-center gap-2 text-sm font-bold text-red-500 hover:text-red-600 transition-colors bg-red-500/10 hover:bg-red-500/20 px-4 py-2 rounded-xl"
+            >
+              <LogOut className="w-4 h-4" />
+              Đăng xuất
+            </button>
           </div>
         </div>
       </nav>

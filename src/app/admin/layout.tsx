@@ -149,17 +149,17 @@ export default function AdminLayout({
               <Search className="absolute left-3 text-slate-400 w-4 h-4 pointer-events-none" />
               <input
                 className="w-full bg-slate-100/50 border-none rounded-full py-2.5 pl-10 focus:ring-2 focus:ring-primary/20 text-sm outline-none transition-all placeholder:text-slate-400 font-medium"
-                placeholder="Tìm nhanh dữ liệu admin..."
+                placeholder="Tìm kiếm..."
                 type="text"
               />
             </div>
           </div>
 
           <div className="flex items-center gap-6">
-            <button className="text-slate-500 hover:text-blue-600 transition-colors duration-200" type="button" aria-label="Notifications">
+            <button className="text-slate-500 hover:text-blue-600 transition-colors duration-200" type="button" aria-label="Thông báo">
               <Bell className="w-5 h-5" />
             </button>
-            <button className="text-slate-500 hover:text-blue-600 transition-colors duration-200" type="button" aria-label="Help">
+            <button className="text-slate-500 hover:text-blue-600 transition-colors duration-200" type="button" aria-label="Trợ giúp">
               <HelpCircle className="w-5 h-5" />
             </button>
             <div className="h-10 w-10 rounded-full bg-gradient-to-tr from-primary to-secondary p-0.5 shadow-lg flex items-center justify-center text-white">

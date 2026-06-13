@@ -16,9 +16,9 @@ import {
   type CompanyDashboardResponse,
   type CompanyInviteResponse,
   type CompanyMemberResponse,
-  type CompanyRequest,
   type CompanyStatus,
 } from "@/lib/api/company";
+import { ChangePasswordForm } from "@/components/auth/ChangePasswordForm";
 
 const statusLabel: Record<CompanyStatus, string> = {
   PENDING: "Đang chờ duyệt",
@@ -499,9 +499,14 @@ export default function RecruiterCompanyPage() {
       )}
 
       {activeTab === "settings" && (
-        <section className="bg-white/75 rounded-lg border border-outline-variant/15 p-6">
-          <h2 className="text-xl font-bold text-on-surface mb-3">Cài đặt</h2>
-          <p className="text-on-surface-variant">Chưa cần chuyển quyền chủ sở hữu trong giai đoạn này. Bạn có thể cập nhật thông tin công ty và quản lý thành viên ở các tab tương ứng.</p>
+        <section className="bg-white/75 rounded-lg border border-outline-variant/15 p-6 space-y-8">
+          <div>
+            <h2 className="text-xl font-bold text-on-surface mb-3">Cài đặt công ty</h2>
+            <p className="text-on-surface-variant">Chưa cần chuyển quyền chủ sở hữu trong giai đoạn này. Bạn có thể cập nhật thông tin công ty và quản lý thành viên ở các tab tương ứng.</p>
+          </div>
+          <div>
+            <ChangePasswordForm />
+          </div>
         </section>
       )}
     </div>

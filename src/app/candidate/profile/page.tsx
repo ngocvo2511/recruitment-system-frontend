@@ -25,6 +25,7 @@ import {
   updateCandidateProfile,
   updateOpenToWork,
 } from "@/lib/api/profile";
+import { ChangePasswordForm } from "@/components/auth/ChangePasswordForm";
 
 type ToastItem = {
   id: number;
@@ -443,6 +444,8 @@ export default function CandidateProfilePage() {
           </div>
           
         </div>
+
+        <ChangePasswordForm />
       </section>
 
       <div className="fixed top-5 right-5 z-50 flex flex-col gap-2">

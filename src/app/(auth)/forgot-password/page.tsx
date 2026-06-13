@@ -24,9 +24,9 @@ function ForgotPasswordForm() {
             <div className="w-20 h-20 rounded-full bg-secondary-container flex items-center justify-center mb-8 shadow-[0_10px_30px_rgba(106,55,212,0.2)]">
               <MailCheck className="text-on-secondary-container w-10 h-10" />
             </div>
-            <h2 className="text-2xl font-bold tracking-tight text-on-surface mb-4">Check your email</h2>
+            <h2 className="text-2xl font-bold tracking-tight text-on-surface mb-4">Kiểm tra email của bạn</h2>
             <p className="text-on-surface-variant text-md leading-relaxed mb-8 px-4">
-              We've sent a recovery link to your inbox. Please click the link to reset your account credentials.
+              Chúng tôi đã gửi liên kết khôi phục đến hộp thư của bạn. Vui lòng nhấp vào liên kết để đặt lại mật khẩu.
             </p>
             
             <div className="flex flex-col gap-4 w-full">
@@ -34,13 +34,13 @@ function ForgotPasswordForm() {
                 className="w-full bg-surface-container-high text-on-surface py-3 rounded-full font-bold hover:bg-surface-container-highest transition-all duration-300"
                 onClick={() => window.open('mailto:', '_blank')}
               >
-                Open Mail App
+                Mở ứng dụng email
               </button>
               <button 
                 className="text-sm font-semibold text-secondary hover:text-secondary-dim transition-colors"
                 onClick={() => setIsSuccess(false)}
               >
-                Didn't receive the email? Resend
+                Không nhận được email? Gửi lại
               </button>
             </div>
           </div>
@@ -55,16 +55,16 @@ function ForgotPasswordForm() {
         <div className="w-16 h-16 rounded-full bg-primary-container/20 flex items-center justify-center mb-6">
           <KeyRound className="text-primary w-8 h-8" />
         </div>
-        <h1 className="text-3xl font-bold tracking-[-0.02em] text-on-surface mb-3">Forgot Password</h1>
+        <h1 className="text-3xl font-bold tracking-[-0.02em] text-on-surface mb-3">Quên Mật Khẩu</h1>
         <p className="text-on-surface-variant text-md leading-relaxed">
-          Enter your email and we'll send you instructions to reset your password.
+          Nhập email của bạn và chúng tôi sẽ gửi hướng dẫn để đặt lại mật khẩu.
         </p>
       </div>
 
       <form className="space-y-6" onSubmit={handleSubmit}>
         <div className="group">
           <label className="block text-xs font-bold tracking-widest uppercase text-on-surface-variant mb-2 ml-1">
-            Email Address
+            Địa chỉ Email
           </label>
           <div className="relative">
             <input 
@@ -72,7 +72,7 @@ function ForgotPasswordForm() {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               className="w-full bg-surface-container-high/50 border-none rounded-xl px-5 py-4 text-on-surface placeholder:text-outline-variant focus:ring-2 focus:ring-primary/40 focus:bg-white transition-all duration-300 outline-none" 
-              placeholder="curator@professional.com" 
+              placeholder="email@cuaban.com" 
               type="email"
             />
           </div>
@@ -82,13 +82,13 @@ function ForgotPasswordForm() {
           className="w-full signature-gradient text-white py-4 rounded-full font-bold text-lg shadow-lg hover:scale-[1.02] active:scale-95 transition-all duration-300" 
           type="submit"
         >
-          Send Reset Link
+          Gửi Liên Kết Đặt Lại
         </button>
 
         <div className="text-center mt-6">
           <Link href="/login" className="text-primary font-semibold hover:underline flex items-center justify-center gap-2">
             <ArrowLeft className="w-4 h-4" />
-            Back to Login
+            Quay lại Đăng nhập
           </Link>
         </div>
       </form>
