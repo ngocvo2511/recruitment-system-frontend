@@ -3,9 +3,10 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { Bell, Briefcase, Building2, HelpCircle, LayoutDashboard, LogOut, MessageSquare, Plus, Search, Settings, Sparkles, Users } from "lucide-react";
+import { Bell, Briefcase, Building2, HelpCircle, LayoutDashboard, MessageSquare, Plus, Search, Sparkles, Users } from "lucide-react";
 import { BRAND_NAME } from "@/lib/brand";
 import { clearAuthSession, getHomePathForAccount, getStoredAccountType, getStoredToken, isTokenExpired } from "@/lib/authSession";
+import UserMenu from "@/components/layout/UserMenu";
 
 const navItems = [
   { href: "/recruiter/dashboard", label: "Tổng quan", icon: LayoutDashboard },
@@ -14,6 +15,10 @@ const navItems = [
   { href: "/recruiter/pipeline", label: "Quy trình", icon: LayoutDashboard },
   { href: "/recruiter/candidates", label: "Ứng viên", icon: Users },
   { href: "/recruiter/ai-suggest", label: "Gợi ý AI", icon: Sparkles },
+];
+
+const accountMenuItems = [
+  { href: "/recruiter/company", label: "Hồ sơ công ty", icon: Building2 },
 ];
 
 export default function RecruiterLayout({
@@ -68,10 +73,8 @@ export default function RecruiterLayout({
   }
 
   const logout = () => {
-    window.localStorage.removeItem("token");
-    window.localStorage.removeItem("accountType");
-    window.localStorage.removeItem("userId");
-    router.push("/login?role=recruiter");
+    clearAuthSession();
+    router.replace("/login?role=recruiter");
   };
 
   return (
@@ -105,9 +108,7 @@ export default function RecruiterLayout({
           <button className="p-2 text-slate-500 hover:bg-blue-50/50 rounded-full transition-all duration-300" title="Tin nhắn">
             <MessageSquare className="w-5 h-5" />
           </button>
-          <button className="p-2 text-slate-500 hover:bg-blue-50/50 rounded-full transition-all duration-300" title="Cài đặt">
-            <Settings className="w-5 h-5" />
-          </button>
+          <UserMenu roleLabel="Nhà tuyển dụng" items={accountMenuItems} onLogout={logout} />
         </div>
       </nav>
 
@@ -146,14 +147,6 @@ export default function RecruiterLayout({
             <HelpCircle className="w-5 h-5" />
             <span className="text-sm font-medium">Trợ giúp</span>
           </Link>
-          <button
-            className="flex items-center gap-3 px-4 py-3 text-slate-500 hover:text-slate-900 transition-all duration-200 text-left"
-            onClick={logout}
-            type="button"
-          >
-            <LogOut className="w-5 h-5" />
-            <span className="text-sm font-medium">Đăng xuất</span>
-          </button>
         </div>
       </aside>
 

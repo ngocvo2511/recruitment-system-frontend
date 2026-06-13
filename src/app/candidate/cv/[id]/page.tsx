@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { User, FileText, Settings, Lightbulb, Eye, LoaderCircle, ArrowLeft, Sparkles } from "lucide-react";
+import { User, FileText, Eye, LoaderCircle, ArrowLeft, Sparkles } from "lucide-react";
 import {
   ApiError,
   CvListItemResponse,
@@ -197,14 +197,6 @@ export default function CandidateCvDetailPage() {
             <Link href="/candidate/cv" className="flex items-center gap-3 px-4 py-3 rounded-xl bg-primary-container/20 text-primary font-bold">
               <FileText className="w-5 h-5 fill-primary/20" />
               <span>Quản lý CV</span>
-            </Link>
-            <Link href="#" className="flex items-center gap-3 px-4 py-3 rounded-xl text-on-surface-variant hover:bg-surface-container-high transition-colors">
-              <Lightbulb className="w-5 h-5" />
-              <span className="font-medium">Gợi ý AI</span>
-            </Link>
-            <Link href="#" className="flex items-center gap-3 px-4 py-3 rounded-xl text-on-surface-variant hover:bg-surface-container-high transition-colors">
-              <Settings className="w-5 h-5" />
-              <span className="font-medium">Cài đặt</span>
             </Link>
           </nav>
         </aside>

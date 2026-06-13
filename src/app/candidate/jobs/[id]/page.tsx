@@ -1,13 +1,16 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { ArrowLeft, Building2, MapPin, Clock, CheckCircle2, Mic } from "lucide-react";
+import { ArrowLeft, Bookmark, Building2, MapPin, Clock, CheckCircle2, Mic } from "lucide-react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import {
   ApiError,
   getJobById,
   getJobMatch,
+  isJobSaved,
+  removeSavedJob,
+  saveJob,
   type JobMatchScore,
   type JobResponse,
 } from "@/lib/api/jobs";
@@ -114,6 +117,8 @@ export default function JobDetailPage() {
   const [applying, setApplying] = useState(false);
   const [applyError, setApplyError] = useState<string | null>(null);
   const [applySuccess, setApplySuccess] = useState<string | null>(null);
+  const [saved, setSaved] = useState(false);
+  const [updatingSaved, setUpdatingSaved] = useState(false);
 
   useEffect(() => {
     if (!jobId) {
@@ -154,6 +159,25 @@ export default function JobDetailPage() {
       active = false;
     };
   }, [jobId]);
+
+  useEffect(() => {
+    if (!jobId) return;
+    isJobSaved(jobId).then(setSaved).catch(() => setSaved(false));
+  }, [jobId]);
+
+  const toggleSaved = async () => {
+    if (!jobId || updatingSaved) return;
+    setUpdatingSaved(true);
+    try {
+      if (saved) await removeSavedJob(jobId);
+      else await saveJob(jobId);
+      setSaved((current) => !current);
+    } catch (error) {
+      setErrorMessage(error instanceof ApiError ? error.message : "Không thể cập nhật công việc đã lưu.");
+    } finally {
+      setUpdatingSaved(false);
+    }
+  };
 
   const jobRequirementSections = job?.requirementSections;
   const requirementSections = useMemo(() => {
@@ -410,6 +434,19 @@ export default function JobDetailPage() {
           </div>
           <div className="flex md:flex-col items-center md:items-end gap-3 w-full md:w-auto">
             <div className="text-2xl font-black text-primary">{formatSalary(job)}</div>
+            <button
+              type="button"
+              onClick={() => void toggleSaved()}
+              disabled={updatingSaved}
+              className={`inline-flex w-full items-center justify-center gap-2 rounded-full border px-6 py-3 font-bold transition md:w-auto ${
+                saved
+                  ? "border-primary bg-primary text-white"
+                  : "border-outline-variant/30 bg-surface text-on-surface-variant hover:text-primary"
+              } disabled:opacity-50`}
+            >
+              <Bookmark className={`h-4 w-4 ${saved ? "fill-current" : ""}`} />
+              {saved ? "Đã lưu" : "Lưu công việc"}
+            </button>
             <Link
               href={`/candidate/jobs/${job.id}/mock-interview/setup`}
               className="inline-flex w-full items-center justify-center gap-2 rounded-full border border-primary/30 bg-primary/10 px-6 py-3 font-bold text-primary transition hover:bg-primary/15 md:w-auto"

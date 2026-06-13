@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { User, FileText, Settings, Lightbulb, CloudUpload, File, Eye, Trash2, LoaderCircle, CheckCircle, Sparkles } from "lucide-react";
+import { User, FileText, CloudUpload, File, Eye, Trash2, LoaderCircle, CheckCircle, Sparkles } from "lucide-react";
 import { ApiError, CvListItemResponse, deleteCv, getExtractedData, getExtractionStatus, getMyCvs, retryExtraction, setDefaultCv, uploadCv } from "@/lib/api/cv";
 import { getCandidateProfile, updateCandidateProfile } from "@/lib/api/profile";
 
@@ -497,14 +497,6 @@ export default function CandidateCVPage() {
             <Link href="/candidate/cv" className="flex items-center gap-3 px-4 py-3 rounded-xl bg-primary-container/20 text-primary font-bold">
               <FileText className="w-5 h-5 fill-primary/20" />
               <span>Quản lý CV</span>
-            </Link>
-            <Link href="#" className="flex items-center gap-3 px-4 py-3 rounded-xl text-on-surface-variant hover:bg-surface-container-high transition-colors">
-              <Lightbulb className="w-5 h-5" />
-              <span className="font-medium">Gợi ý từ AI</span>
-            </Link>
-            <Link href="#" className="flex items-center gap-3 px-4 py-3 rounded-xl text-on-surface-variant hover:bg-surface-container-high transition-colors">
-              <Settings className="w-5 h-5" />
-              <span className="font-medium">Cài đặt</span>
             </Link>
           </nav>
         </aside>

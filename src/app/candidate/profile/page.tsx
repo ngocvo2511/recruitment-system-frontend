@@ -1,11 +1,10 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   User,
   FileText,
-  Settings,
   Lightbulb,
   Camera,
   Verified,
@@ -22,10 +21,12 @@ import {
   ApiError,
   CandidateProfileResponse,
   getCandidateProfile,
+  updateCandidateAvatar,
   updateCandidateProfile,
   updateOpenToWork,
 } from "@/lib/api/profile";
 import { ChangePasswordForm } from "@/components/auth/ChangePasswordForm";
+import { getSavedJobCount } from "@/lib/api/jobs";
 
 type ToastItem = {
   id: number;
@@ -38,6 +39,7 @@ export default function CandidateProfilePage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [savingOpenToWork, setSavingOpenToWork] = useState(false);
+  const [uploadingAvatar, setUploadingAvatar] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [toasts, setToasts] = useState<ToastItem[]>([]);
   const [fullName, setFullName] = useState("");
@@ -47,6 +49,8 @@ export default function CandidateProfilePage() {
   const [openToWork, setOpenToWork] = useState(false);
   const [skillInput, setSkillInput] = useState("");
   const [skills, setSkills] = useState<string[]>([]);
+  const [savedJobCount, setSavedJobCount] = useState(0);
+  const avatarInputRef = useRef<HTMLInputElement>(null);
 
   const addToast = (type: ToastItem["type"], message: string) => {
     const id = Date.now() + Math.floor(Math.random() * 1000);
@@ -85,6 +89,10 @@ export default function CandidateProfilePage() {
     }, 0);
 
     return () => window.clearTimeout(timer);
+  }, []);
+
+  useEffect(() => {
+    getSavedJobCount().then(setSavedJobCount).catch(() => setSavedJobCount(0));
   }, []);
 
   const skillChips = useMemo(() => skills.filter(Boolean), [skills]);
@@ -131,13 +139,14 @@ export default function CandidateProfilePage() {
     setSaving(true);
     setErrorMessage(null);
     try {
-      await updateCandidateProfile({
+      const updatedProfile = await updateCandidateProfile({
         fullName,
         headline,
         phoneNumber,
         openToWork,
         confirmedSkills: skills,
       });
+      window.dispatchEvent(new CustomEvent("candidate-profile-updated", { detail: updatedProfile }));
       addToast("success", "Cập nhật hồ sơ thành công.");
       await loadProfile();
     } catch (error) {
@@ -150,6 +159,37 @@ export default function CandidateProfilePage() {
       }
     } finally {
       setSaving(false);
+    }
+  };
+
+  const handleAvatarChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    event.target.value = "";
+    if (!file) {
+      return;
+    }
+    if (!["image/jpeg", "image/png", "image/webp"].includes(file.type)) {
+      addToast("error", "Chỉ hỗ trợ ảnh JPG, PNG hoặc WebP.");
+      return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      addToast("error", "Ảnh đại diện không được vượt quá 5 MB.");
+      return;
+    }
+
+    setUploadingAvatar(true);
+    setErrorMessage(null);
+    try {
+      const updatedProfile = await updateCandidateAvatar(file);
+      setProfile(updatedProfile);
+      window.dispatchEvent(new CustomEvent("candidate-profile-updated", { detail: updatedProfile }));
+      addToast("success", "Đã cập nhật ảnh đại diện.");
+    } catch (error) {
+      const message = error instanceof ApiError ? error.message : "Không thể cập nhật ảnh đại diện.";
+      setErrorMessage(message);
+      addToast("error", message);
+    } finally {
+      setUploadingAvatar(false);
     }
   };
 
@@ -194,14 +234,6 @@ export default function CandidateProfilePage() {
             <FileText className="w-5 h-5" />
             <span className="font-medium">Quản lý CV</span>
           </Link>
-          <Link href="#" className="flex items-center gap-3 px-4 py-3 rounded-xl text-on-surface-variant hover:bg-surface-container-high transition-colors">
-            <Lightbulb className="w-5 h-5" />
-            <span className="font-medium">Gợi ý từ AI</span>
-          </Link>
-          <Link href="#" className="flex items-center gap-3 px-4 py-3 rounded-xl text-on-surface-variant hover:bg-surface-container-high transition-colors">
-            <Settings className="w-5 h-5" />
-            <span className="font-medium">Cài đặt</span>
-          </Link>
         </nav>
         
         {/* Pro Tip Card */}
@@ -237,15 +269,38 @@ export default function CandidateProfilePage() {
           {/* Profile Header */}
           <div className="flex flex-col md:flex-row items-center gap-8 mb-12">
             <div className="relative group">
-              <div className="w-32 h-32 md:w-36 md:h-36 rounded-full overflow-hidden border-4 border-white shadow-xl">
-                <img
-                  className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
-                  src={profile?.profilePictureUrl ?? "https://i.pravatar.cc/150?img=1"}
-                  alt="Profile avatar"
-                />
+              <div className="flex w-32 h-32 md:w-36 md:h-36 items-center justify-center rounded-full overflow-hidden border-4 border-white bg-primary/10 text-primary shadow-xl">
+                {profile?.profilePictureUrl ? (
+                  // Profile images can come from user-configured external storage domains.
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    className="w-full h-full object-cover"
+                    src={profile.profilePictureUrl}
+                    alt="Ảnh đại diện"
+                  />
+                ) : (
+                  <User className="h-16 w-16" />
+                )}
               </div>
-              <button className="absolute inset-0 flex items-center justify-center bg-blue-900/40 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                <Camera className="w-8 h-8"/>
+              <input
+                ref={avatarInputRef}
+                className="sr-only"
+                type="file"
+                accept="image/jpeg,image/png,image/webp"
+                onChange={(event) => void handleAvatarChange(event)}
+              />
+              <button
+                type="button"
+                disabled={uploadingAvatar}
+                onClick={() => avatarInputRef.current?.click()}
+                className="absolute inset-0 flex items-center justify-center rounded-full bg-slate-950/50 text-white opacity-0 transition-opacity group-hover:opacity-100 focus:opacity-100 disabled:cursor-wait"
+                aria-label="Đổi ảnh đại diện"
+              >
+                {uploadingAvatar ? (
+                  <LoaderCircle className="h-8 w-8 animate-spin" />
+                ) : (
+                  <Camera className="h-8 w-8" />
+                )}
               </button>
             </div>
             <div className="text-center md:text-left">
@@ -429,11 +484,11 @@ export default function CandidateProfilePage() {
                 <div className="text-[10px] uppercase tracking-wider text-blue-400 font-bold mt-1">12 Công ty</div>
               </div>
               
-              <div className="p-4 rounded-xl bg-purple-50/50 hover:bg-purple-100/50 transition-all cursor-pointer border border-purple-100/50">
+              <Link href="/candidate/saved-jobs" className="block p-4 rounded-xl bg-purple-50/50 hover:bg-purple-100/50 transition-all border border-purple-100/50">
                 <Bookmark className="text-purple-600 mb-2 w-6 h-6" />
                 <div className="font-bold text-sm text-purple-950">Công việc đã lưu</div>
-                <div className="text-[10px] uppercase tracking-wider text-purple-400 font-bold mt-1">4 Cơ hội</div>
-              </div>
+                <div className="text-[10px] uppercase tracking-wider text-purple-400 font-bold mt-1">{savedJobCount} cơ hội</div>
+              </Link>
             </div>
           </div>
           

@@ -71,8 +71,9 @@ function getAccessToken(): string | null {
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
   const token = getAccessToken();
   const headers = new Headers(init?.headers);
+  const isFormData = init?.body instanceof FormData;
 
-  if (!headers.has("Content-Type")) {
+  if (!isFormData && !headers.has("Content-Type")) {
     headers.set("Content-Type", "application/json");
   }
 
@@ -132,5 +133,14 @@ export function updateOpenToWork(payload: OpenToWorkUpdateRequest): Promise<stri
   return request<string>("/api/profile/candidate/open-to-work", {
     method: "PUT",
     body: JSON.stringify(payload),
+  });
+}
+
+export function updateCandidateAvatar(file: File): Promise<CandidateProfileResponse> {
+  const formData = new FormData();
+  formData.append("file", file);
+  return request<CandidateProfileResponse>("/api/profile/candidate/avatar", {
+    method: "PUT",
+    body: formData,
   });
 }

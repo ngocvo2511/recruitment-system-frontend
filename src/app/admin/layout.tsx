@@ -9,16 +9,15 @@ import {
   FileText,
   HelpCircle,
   LayoutDashboard,
-  LogOut,
   Search,
   ScrollText,
   Settings,
   ShieldCheck,
-  UserCircle,
   Users,
 } from "lucide-react";
 import { BRAND_NAME } from "@/lib/brand";
 import { clearAuthSession, getStoredAccountType, getStoredToken, isTokenExpired } from "@/lib/authSession";
+import UserMenu from "@/components/layout/UserMenu";
 
 const navItems = [
   { href: "/admin/dashboard", label: "Tổng quan", icon: LayoutDashboard },
@@ -27,6 +26,11 @@ const navItems = [
   { href: "/admin/company-moderation", label: "Kiểm duyệt công ty", icon: ShieldCheck },
   { href: "/admin/audit-logs", label: "Nhật ký admin", icon: ScrollText },
   { href: "/admin/settings", label: "Cài đặt hệ thống", icon: Settings },
+];
+
+const accountMenuItems = [
+  { href: "/admin/settings", label: "Cài đặt hệ thống", icon: Settings },
+  { href: "/admin/audit-logs", label: "Nhật ký quản trị", icon: ScrollText },
 ];
 
 function isAdminAccount(accountType: string | null): boolean {
@@ -85,10 +89,8 @@ export default function AdminLayout({
   }
 
   const logout = () => {
-    window.localStorage.removeItem("token");
-    window.localStorage.removeItem("accountType");
-    window.localStorage.removeItem("userId");
-    router.push("/admin/login");
+    clearAuthSession();
+    router.replace("/admin/login");
   };
 
   return (
@@ -125,14 +127,6 @@ export default function AdminLayout({
             <FileText className="w-5 h-5" />
             Xuất báo cáo
           </button>
-          <button
-            className="w-full text-slate-500 font-semibold py-3 rounded-xl flex items-center justify-center gap-2 hover:bg-slate-100 hover:text-slate-900 transition-colors"
-            onClick={logout}
-            type="button"
-          >
-            <LogOut className="w-5 h-5" />
-            Đăng xuất
-          </button>
         </div>
       </aside>
 
@@ -162,9 +156,7 @@ export default function AdminLayout({
             <button className="text-slate-500 hover:text-blue-600 transition-colors duration-200" type="button" aria-label="Trợ giúp">
               <HelpCircle className="w-5 h-5" />
             </button>
-            <div className="h-10 w-10 rounded-full bg-gradient-to-tr from-primary to-secondary p-0.5 shadow-lg flex items-center justify-center text-white">
-              <UserCircle className="h-7 w-7" />
-            </div>
+            <UserMenu roleLabel="Quản trị viên" items={accountMenuItems} onLogout={logout} />
           </div>
         </header>
 

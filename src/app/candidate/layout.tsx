@@ -1,19 +1,27 @@
 "use client";
 
 import Link from "next/link";
-import { Bell, LogOut } from "lucide-react";
+import { Bell, Bookmark, BriefcaseBusiness, FileText, UserRound, Video } from "lucide-react";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { BRAND_NAME } from "@/lib/brand";
 import { clearAuthSession, getHomePathForAccount, getStoredAccountType, getStoredToken, isTokenExpired } from "@/lib/authSession";
+import UserMenu from "@/components/layout/UserMenu";
+import { getCandidateProfile } from "@/lib/api/profile";
+import type { CandidateProfileResponse } from "@/lib/api/profile";
 
 
 const navItems = [
   { href: "/candidate/dashboard", label: "Tổng quan" },
   { href: "/candidate/jobs", label: "Việc làm" },
-  { href: "/candidate/applications", label: "Đơn ứng tuyển" },
-  { href: "/candidate/cv", label: "Quản lý CV" },
-  { href: "/candidate/profile", label: "Hồ sơ" },
+];
+
+const accountMenuItems = [
+  { href: "/candidate/mock-interviews", label: "Luyện phỏng vấn AI", icon: Video },
+  { href: "/candidate/applications", label: "Đơn ứng tuyển", icon: BriefcaseBusiness },
+  { href: "/candidate/saved-jobs", label: "Việc làm đã lưu", icon: Bookmark },
+  { href: "/candidate/cv", label: "Quản lý CV", icon: FileText },
+  { href: "/candidate/profile", label: "Hồ sơ cá nhân", icon: UserRound },
 ];
 
 export default function CandidateLayout({
@@ -24,6 +32,8 @@ export default function CandidateLayout({
   const router = useRouter();
   const pathname = usePathname();
   const [isAuthorized, setIsAuthorized] = useState(false);
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
+  const [displayName, setDisplayName] = useState<string | null>(null);
 
   useEffect(() => {
     const validateSession = () => {
@@ -63,6 +73,39 @@ export default function CandidateLayout({
     };
   }, [router]);
 
+  useEffect(() => {
+    if (!isAuthorized) {
+      return;
+    }
+
+    let active = true;
+    getCandidateProfile()
+      .then((profile) => {
+        if (active) {
+          setAvatarUrl(profile.profilePictureUrl ?? null);
+          setDisplayName(profile.fullName ?? profile.email ?? null);
+        }
+      })
+      .catch(() => {
+        // The account menu remains usable when the optional profile is unavailable.
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [isAuthorized]);
+
+  useEffect(() => {
+    const updateAccountMenu = (event: Event) => {
+      const profile = (event as CustomEvent<CandidateProfileResponse>).detail;
+      setAvatarUrl(profile.profilePictureUrl ?? null);
+      setDisplayName(profile.fullName ?? profile.email ?? null);
+    };
+
+    window.addEventListener("candidate-profile-updated", updateAccountMenu);
+    return () => window.removeEventListener("candidate-profile-updated", updateAccountMenu);
+  }, []);
+
   if (!isAuthorized) {
     return null;
   }
@@ -83,12 +126,6 @@ export default function CandidateLayout({
               {BRAND_NAME}
             </Link>
             <div className="hidden md:flex gap-8 items-center">
-              <Link
-                href="/candidate/mock-interviews"
-                className={pathname.startsWith("/candidate/mock-interviews") ? "text-blue-600 dark:text-blue-400 font-semibold border-b-2 border-blue-600 pb-1" : "text-slate-600 dark:text-slate-400 hover:text-blue-500 transition-colors"}
-              >
-                Phỏng vấn thử
-              </Link>
               {navItems.map((item) => {
                 const active = pathname.startsWith(item.href);
                 return (
@@ -107,19 +144,16 @@ export default function CandidateLayout({
             <button className="text-on-surface-variant hover:bg-white/20 p-2 rounded-full transition-all duration-300">
               <Bell className="w-5 h-5"/>
             </button>
-            <div className="h-10 w-10 rounded-full overflow-hidden border-2 border-primary/20 hover:scale-105 transition-transform">
-              <img alt="User profile avatar" className="w-full h-full object-cover" src="https://i.pravatar.cc/150?img=1" />
-            </div>
-            <button 
-              onClick={() => {
+            <UserMenu
+              displayName={displayName}
+              roleLabel="Ứng viên"
+              items={accountMenuItems}
+              avatarUrl={avatarUrl}
+              onLogout={() => {
                 clearAuthSession();
                 router.replace("/login?role=candidate");
               }}
-              className="flex items-center gap-2 text-sm font-bold text-red-500 hover:text-red-600 transition-colors bg-red-500/10 hover:bg-red-500/20 px-4 py-2 rounded-xl"
-            >
-              <LogOut className="w-4 h-4" />
-              Đăng xuất
-            </button>
+            />
           </div>
         </div>
       </nav>

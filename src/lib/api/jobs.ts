@@ -71,6 +71,11 @@ export type JobRecommendationResponse = {
   matchScore?: number | null;
 };
 
+export type SavedJobResponse = {
+  job: JobResponse;
+  savedAt: string;
+};
+
 export type CvItemResponse = {
   id: string;
   cvName: string;
@@ -206,4 +211,29 @@ export function getJobMatches(jobId: string, topK = 10): Promise<CvRecommendatio
   const params = new URLSearchParams();
   params.set("topK", String(topK));
   return request<CvRecommendationResponse[]>(`/api/jobs/${jobId}/matches?${params.toString()}`);
+}
+
+export function getSavedJobs(): Promise<SavedJobResponse[]> {
+  return request<SavedJobResponse[]>("/api/candidate/saved-jobs");
+}
+
+export function getSavedJobCount(): Promise<number> {
+  return request<number>("/api/candidate/saved-jobs/count");
+}
+
+export async function isJobSaved(jobId: string): Promise<boolean> {
+  const result = await request<{ saved: boolean }>(`/api/candidate/saved-jobs/${jobId}/status`);
+  return result.saved;
+}
+
+export function saveJob(jobId: string): Promise<SavedJobResponse> {
+  return request<SavedJobResponse>(`/api/candidate/saved-jobs/${jobId}`, {
+    method: "POST",
+  });
+}
+
+export function removeSavedJob(jobId: string): Promise<void> {
+  return request<void>(`/api/candidate/saved-jobs/${jobId}`, {
+    method: "DELETE",
+  });
 }

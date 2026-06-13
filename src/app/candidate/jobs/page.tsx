@@ -1,11 +1,14 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { Search, MapPin, Clock, Building2, ChevronRight, Sparkles } from "lucide-react";
+import { Search, MapPin, Clock, Building2, ChevronRight, Sparkles, Bookmark } from "lucide-react";
 import Link from "next/link";
 import {
   ApiError,
+  getSavedJobs,
   getJobRecommendations,
+  removeSavedJob,
+  saveJob,
   searchJobsFts,
   type JobRecommendationResponse,
   type JobResponse,
@@ -45,13 +48,17 @@ export default function CandidateJobsPage() {
   const [jobs, setJobs] = useState<JobRecommendationResponse[]>([]);
   const [loading, setLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [savedJobIds, setSavedJobIds] = useState<Set<string>>(new Set());
+  const [savingJobId, setSavingJobId] = useState<string | null>(null);
 
   const [searchQueryInput, setSearchQueryInput] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
 
   useEffect(() => {
     let active = true;
-    setLoading(true);
+    queueMicrotask(() => {
+      if (active) setLoading(true);
+    });
 
     if (!searchQuery || searchQuery.trim() === "") {
       getJobRecommendations(12)
@@ -97,6 +104,35 @@ export default function CandidateJobsPage() {
       active = false;
     };
   }, [searchQuery]);
+
+  useEffect(() => {
+    getSavedJobs()
+      .then((items) => setSavedJobIds(new Set(items.map((item) => item.job.id))))
+      .catch(() => setSavedJobIds(new Set()));
+  }, []);
+
+  const toggleSavedJob = async (jobId: string) => {
+    if (savingJobId) return;
+    const currentlySaved = savedJobIds.has(jobId);
+    setSavingJobId(jobId);
+    try {
+      if (currentlySaved) {
+        await removeSavedJob(jobId);
+      } else {
+        await saveJob(jobId);
+      }
+      setSavedJobIds((current) => {
+        const next = new Set(current);
+        if (currentlySaved) next.delete(jobId);
+        else next.add(jobId);
+        return next;
+      });
+    } catch (error) {
+      setErrorMessage(error instanceof ApiError ? error.message : "Không thể cập nhật công việc đã lưu.");
+    } finally {
+      setSavingJobId(null);
+    }
+  };
 
   const totalJobs = jobs.length;
   const jobList = useMemo(() => jobs, [jobs]);
@@ -229,9 +265,25 @@ export default function CandidateJobsPage() {
                 </div>
                 <div className="flex md:flex-col items-end gap-2 shrink-0 w-full md:w-auto">
                   <span className="text-lg font-black text-on-surface text-primary">{formatSalary(job)}</span>
-                  <Link href={`/candidate/jobs/${job.id}`} className="px-6 py-2 bg-surface text-on-surface-variant font-bold rounded-xl hover:bg-primary hover:text-white transition-all w-full md:w-auto text-center">
-                    Ứng tuyển
-                  </Link>
+                  <div className="flex w-full gap-2 md:w-auto">
+                    <button
+                      type="button"
+                      aria-label={savedJobIds.has(job.id) ? "Bỏ lưu công việc" : "Lưu công việc"}
+                      title={savedJobIds.has(job.id) ? "Bỏ lưu" : "Lưu công việc"}
+                      disabled={savingJobId === job.id}
+                      onClick={() => void toggleSavedJob(job.id)}
+                      className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border transition-colors disabled:opacity-50 ${
+                        savedJobIds.has(job.id)
+                          ? "border-primary bg-primary text-white"
+                          : "border-outline-variant/30 bg-surface text-on-surface-variant hover:text-primary"
+                      }`}
+                    >
+                      <Bookmark className={`h-5 w-5 ${savedJobIds.has(job.id) ? "fill-current" : ""}`} />
+                    </button>
+                    <Link href={`/candidate/jobs/${job.id}`} className="px-6 py-2 bg-surface text-on-surface-variant font-bold rounded-xl hover:bg-primary hover:text-white transition-all w-full md:w-auto text-center">
+                      Xem chi tiết
+                    </Link>
+                  </div>
                 </div>
               </div>
             ))}
