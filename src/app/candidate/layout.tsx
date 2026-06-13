@@ -5,7 +5,7 @@ import { Bell } from "lucide-react";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { BRAND_NAME } from "@/lib/brand";
-import { getHomePathForAccount, getStoredAccountType, getStoredToken } from "@/lib/authSession";
+import { clearAuthSession, getHomePathForAccount, getStoredAccountType, getStoredToken, isTokenExpired } from "@/lib/authSession";
 
 const navItems = [
   { href: "/candidate/dashboard", label: "Tổng quan" },
@@ -25,21 +25,41 @@ export default function CandidateLayout({
   const [isAuthorized, setIsAuthorized] = useState(false);
 
   useEffect(() => {
-    const token = getStoredToken();
-    const accountType = getStoredAccountType();
+    const validateSession = () => {
+      const token = getStoredToken();
+      const accountType = getStoredAccountType();
 
-    if (!token || !accountType) {
-      router.replace("/login?role=candidate");
-      return;
-    }
+      if (!token || !accountType) {
+        router.replace("/login?role=candidate");
+        return;
+      }
 
-    if (accountType !== "candidate") {
-      router.replace(getHomePathForAccount(accountType));
-      return;
-    }
+      if (isTokenExpired(token)) {
+        clearAuthSession();
+        router.replace("/login?reason=session-expired");
+        return;
+      }
 
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    setIsAuthorized(true);
+      if (accountType !== "candidate") {
+        router.replace(getHomePathForAccount(accountType));
+        return;
+      }
+
+      setIsAuthorized(true);
+    };
+
+    validateSession();
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === "visible") {
+        validateSession();
+      }
+    };
+    window.addEventListener("focus", validateSession);
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+    return () => {
+      window.removeEventListener("focus", validateSession);
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+    };
   }, [router]);
 
   if (!isAuthorized) {
@@ -62,6 +82,12 @@ export default function CandidateLayout({
               {BRAND_NAME}
             </Link>
             <div className="hidden md:flex gap-8 items-center">
+              <Link
+                href="/candidate/mock-interviews"
+                className={pathname.startsWith("/candidate/mock-interviews") ? "text-blue-600 dark:text-blue-400 font-semibold border-b-2 border-blue-600 pb-1" : "text-slate-600 dark:text-slate-400 hover:text-blue-500 transition-colors"}
+              >
+                Phỏng vấn thử
+              </Link>
               {navItems.map((item) => {
                 const active = pathname.startsWith(item.href);
                 return (

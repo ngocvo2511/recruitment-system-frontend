@@ -10,6 +10,7 @@ import {
   getHomePathForAccount,
   getStoredAccountType,
   getStoredToken,
+  isTokenExpired,
   normalizeAccountType,
   saveAuthSession,
 } from "@/lib/authSession";
@@ -24,18 +25,24 @@ function LoginForm() {
   const router = useRouter();
   const requestedRole = searchParams.get("role");
   const initialRole: PublicLoginRole = requestedRole === "recruiter" ? "recruiter" : "candidate";
+  const sessionExpired = searchParams.get("reason") === "session-expired";
 
   const [role, setRole] = useState<PublicLoginRole>(initialRole);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
+  const [error, setError] = useState(sessionExpired ? "Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại." : "");
 
   useEffect(() => {
     const token = getStoredToken();
     const accountType = getStoredAccountType();
     if (token && accountType) {
+      if (isTokenExpired(token)) {
+        clearAuthSession();
+        router.replace("/login?reason=session-expired");
+        return;
+      }
       router.replace(getHomePathForAccount(accountType));
     }
   }, [router]);

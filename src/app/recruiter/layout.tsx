@@ -5,7 +5,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { Bell, Briefcase, Building2, HelpCircle, LayoutDashboard, LogOut, MessageSquare, Plus, Search, Settings, Sparkles, Users } from "lucide-react";
 import { BRAND_NAME } from "@/lib/brand";
-import { getHomePathForAccount, getStoredAccountType, getStoredToken } from "@/lib/authSession";
+import { clearAuthSession, getHomePathForAccount, getStoredAccountType, getStoredToken, isTokenExpired } from "@/lib/authSession";
 
 const navItems = [
   { href: "/recruiter/dashboard", label: "Tổng quan", icon: LayoutDashboard },
@@ -26,21 +26,41 @@ export default function RecruiterLayout({
   const [isAuthorized, setIsAuthorized] = useState(false);
 
   useEffect(() => {
-    const token = getStoredToken();
-    const accountType = getStoredAccountType();
+    const validateSession = () => {
+      const token = getStoredToken();
+      const accountType = getStoredAccountType();
 
-    if (!token || !accountType) {
-      router.replace("/login?role=recruiter");
-      return;
-    }
+      if (!token || !accountType) {
+        router.replace("/login?role=recruiter");
+        return;
+      }
 
-    if (accountType !== "recruiter") {
-      router.replace(getHomePathForAccount(accountType));
-      return;
-    }
+      if (isTokenExpired(token)) {
+        clearAuthSession();
+        router.replace("/login?reason=session-expired");
+        return;
+      }
 
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    setIsAuthorized(true);
+      if (accountType !== "recruiter") {
+        router.replace(getHomePathForAccount(accountType));
+        return;
+      }
+
+      setIsAuthorized(true);
+    };
+
+    validateSession();
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === "visible") {
+        validateSession();
+      }
+    };
+    window.addEventListener("focus", validateSession);
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+    return () => {
+      window.removeEventListener("focus", validateSession);
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+    };
   }, [router]);
 
   if (!isAuthorized) {

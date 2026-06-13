@@ -14,9 +14,9 @@ export default function RoleSelection() {
             <div className="w-12 h-1.5 rounded-full bg-surface-container-highest"></div>
             <div className="w-12 h-1.5 rounded-full bg-surface-container-highest"></div>
           </div>
-          <h1 className="text-4xl md:text-5xl font-extrabold tracking-[-0.02em] text-on-surface">Choose Your Journey</h1>
+          <h1 className="text-4xl md:text-5xl font-extrabold tracking-[-0.02em] text-on-surface">Bạn muốn sử dụng hệ thống với vai trò nào?</h1>
           <p className="text-lg text-on-surface-variant max-w-xl mx-auto">
-            Select how you want to use {BRAND_NAME}. You can always change this later in your account settings.
+            Chọn vai trò phù hợp để bắt đầu sử dụng {BRAND_NAME}.
           </p>
         </div>
 
@@ -30,26 +30,26 @@ export default function RoleSelection() {
                 <User className="text-on-primary w-8 h-8" />
               </div>
               <div className="space-y-3">
-                <h2 className="text-2xl font-bold text-on-surface">Candidate</h2>
+                <h2 className="text-2xl font-bold text-on-surface">Ứng viên</h2>
                 <p className="text-on-surface-variant leading-relaxed">
-                  Find your dream job and get AI-matched opportunities tailored to your skills.
+                  Tìm kiếm cơ hội việc làm và nhận gợi ý phù hợp với kỹ năng của bạn bằng AI.
                 </p>
               </div>
               <div className="pt-4 border-t border-outline-variant/10">
                 <ul className="space-y-3">
                   <li className="flex items-center gap-3 text-sm text-on-surface-variant">
                     <span className="material-symbols-outlined text-primary text-lg">check_circle</span>
-                    Curated portfolio builder
+                    Tạo và quản lý CV chuyên nghiệp
                   </li>
                   <li className="flex items-center gap-3 text-sm text-on-surface-variant">
                     <span className="material-symbols-outlined text-primary text-lg">check_circle</span>
-                    AI-powered job discovery
+                    Khám phá việc làm phù hợp bằng AI
                   </li>
                 </ul>
               </div>
             </div>
             <div className="mt-8 flex items-center text-primary font-bold group-hover:translate-x-2 transition-transform duration-300">
-              Continue as Candidate
+              Tiếp tục với vai trò ứng viên
               <ArrowRight className="ml-2 w-5 h-5" />
             </div>
           </Link>
@@ -63,26 +63,26 @@ export default function RoleSelection() {
                 <Briefcase className="text-on-secondary w-8 h-8" />
               </div>
               <div className="space-y-3">
-                <h2 className="text-2xl font-bold text-on-surface">Recruiter</h2>
+                <h2 className="text-2xl font-bold text-on-surface">Nhà tuyển dụng</h2>
                 <p className="text-on-surface-variant leading-relaxed">
-                  Hire top talent and manage your team efficiently with professional tools.
+                  Đăng tin tuyển dụng, tìm kiếm ứng viên và quản lý quy trình tuyển dụng hiệu quả.
                 </p>
               </div>
               <div className="pt-4 border-t border-outline-variant/10">
                 <ul className="space-y-3">
                   <li className="flex items-center gap-3 text-sm text-on-surface-variant">
                     <span className="material-symbols-outlined text-secondary text-lg">check_circle</span>
-                    Advanced talent search
+                    Tìm kiếm và đánh giá ứng viên
                   </li>
                   <li className="flex items-center gap-3 text-sm text-on-surface-variant">
                     <span className="material-symbols-outlined text-secondary text-lg">check_circle</span>
-                    Team collaboration suite
+                    Quản lý công ty và quy trình tuyển dụng
                   </li>
                 </ul>
               </div>
             </div>
             <div className="mt-8 flex items-center text-secondary font-bold group-hover:translate-x-2 transition-transform duration-300 relative z-10">
-              Continue as Recruiter
+              Tiếp tục với vai trò nhà tuyển dụng
               <ArrowRight className="ml-2 w-5 h-5" />
             </div>
           </Link>
@@ -91,7 +91,7 @@ export default function RoleSelection() {
 
         {/* Additional Help */}
         <p className="text-sm text-slate-500 font-medium tracking-wider uppercase">
-          Already have an account? <Link className="text-primary hover:underline underline-offset-4" href="/login">Log in here</Link>
+          Đã có tài khoản? <Link className="text-primary hover:underline underline-offset-4" href="/login">Đăng nhập tại đây</Link>
         </p>
 
       </div>

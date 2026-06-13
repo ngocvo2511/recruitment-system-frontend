@@ -167,7 +167,7 @@ function RegisterForm() {
     <div className="w-full max-w-lg z-10">
       <div className="glass-card rounded-[1.5rem] p-8 md:p-12 shadow-[0_40px_60px_rgba(0,0,0,0.04)] border border-white/40">
         <div className="text-center mb-10">
-          <h1 className="text-3xl md:text-4xl font-extrabold tracking-[-0.02em] text-on-surface mb-3">
+          <h1 className="text-xl sm:text-2xl md:text-3xl whitespace-nowrap font-extrabold tracking-[-0.02em] text-on-surface mb-3">
             {role === "recruiter" ? "Tạo tài khoản nhà tuyển dụng" : "Tạo tài khoản ứng viên"}
           </h1>
           <p className="text-on-surface-variant">

@@ -18,7 +18,7 @@ import {
   Users,
 } from "lucide-react";
 import { BRAND_NAME } from "@/lib/brand";
-import { getStoredAccountType, getStoredToken } from "@/lib/authSession";
+import { clearAuthSession, getStoredAccountType, getStoredToken, isTokenExpired } from "@/lib/authSession";
 
 const navItems = [
   { href: "/admin/dashboard", label: "Tổng quan", icon: LayoutDashboard },
@@ -43,21 +43,41 @@ export default function AdminLayout({
   const [isAuthorized, setIsAuthorized] = useState(false);
 
   useEffect(() => {
-    const token = getStoredToken();
-    const accountType = getStoredAccountType();
+    const validateSession = () => {
+      const token = getStoredToken();
+      const accountType = getStoredAccountType();
 
-    if (!token || !accountType) {
-      router.replace("/admin/login");
-      return;
-    }
+      if (!token || !accountType) {
+        router.replace("/admin/login");
+        return;
+      }
 
-    if (!isAdminAccount(accountType)) {
-      router.replace("/admin/login");
-      return;
-    }
+      if (isTokenExpired(token)) {
+        clearAuthSession();
+        router.replace("/admin/login?reason=session-expired");
+        return;
+      }
 
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    setIsAuthorized(true);
+      if (!isAdminAccount(accountType)) {
+        router.replace("/admin/login");
+        return;
+      }
+
+      setIsAuthorized(true);
+    };
+
+    validateSession();
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === "visible") {
+        validateSession();
+      }
+    };
+    window.addEventListener("focus", validateSession);
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+    return () => {
+      window.removeEventListener("focus", validateSession);
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+    };
   }, [router]);
 
   if (!isAuthorized) {

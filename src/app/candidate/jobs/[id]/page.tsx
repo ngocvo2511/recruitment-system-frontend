@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { ArrowLeft, Building2, MapPin, Clock, Zap, CheckCircle2 } from "lucide-react";
+import { ArrowLeft, Building2, MapPin, Clock, CheckCircle2, Mic } from "lucide-react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import {
@@ -410,6 +410,13 @@ export default function JobDetailPage() {
           </div>
           <div className="flex md:flex-col items-center md:items-end gap-3 w-full md:w-auto">
             <div className="text-2xl font-black text-primary">{formatSalary(job)}</div>
+            <Link
+              href={`/candidate/jobs/${job.id}/mock-interview/setup`}
+              className="inline-flex w-full items-center justify-center gap-2 rounded-full border border-primary/30 bg-primary/10 px-6 py-3 font-bold text-primary transition hover:bg-primary/15 md:w-auto"
+            >
+              <Mic className="h-4 w-4" />
+              Luyện phỏng vấn với AI
+            </Link>
             <button
               type="button"
               onClick={() => {

@@ -1,4 +1,5 @@
 import type { ApplicationStatus } from "@/lib/api/applications";
+import { handleUnauthorizedResponse } from "@/lib/authSession";
 
 export type ApiResponse<T> = {
   code: number;
@@ -87,6 +88,9 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
     headers,
   });
 
+  if (handleUnauthorizedResponse(response)) {
+    throw new ApiError("Phiên đăng nhập đã hết hạn.", 401, 1003);
+  }
   const payload = (await response.json()) as ApiResponse<T> | ApiErrorShape;
 
   if (!response.ok) {

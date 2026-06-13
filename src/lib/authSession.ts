@@ -3,6 +3,7 @@ export type AccountType = "candidate" | "recruiter" | "admin";
 type JwtPayload = {
   scope?: string;
   user_id?: string;
+  exp?: number;
 };
 
 export function decodeJwtPayload(token: string): JwtPayload | null {
@@ -70,6 +71,15 @@ export function getStoredToken(): string | null {
   return window.localStorage.getItem("token");
 }
 
+export function isTokenExpired(token: string, clockSkewSeconds = 10): boolean {
+  const payload = decodeJwtPayload(token);
+  if (!payload?.exp) {
+    return false;
+  }
+
+  return payload.exp <= Math.floor(Date.now() / 1000) + clockSkewSeconds;
+}
+
 export function getHomePathForAccount(accountType: AccountType): string {
   if (accountType === "admin") {
     return "/admin/dashboard";
@@ -102,4 +112,17 @@ export function saveAuthSession(token: string, accountType: AccountType, userId?
   if (userId) {
     window.localStorage.setItem("userId", userId);
   }
+}
+
+export function handleUnauthorizedResponse(response: Response): boolean {
+  if (response.status !== 401 || typeof window === "undefined") {
+    return false;
+  }
+
+  const accountType = getStoredAccountType();
+  const isAdminContext = accountType === "admin" || window.location.pathname.startsWith("/admin");
+  clearAuthSession();
+  const loginPath = isAdminContext ? "/admin/login" : "/login";
+  window.location.replace(`${loginPath}?reason=session-expired`);
+  return true;
 }

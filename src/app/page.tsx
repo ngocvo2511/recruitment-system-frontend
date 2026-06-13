@@ -74,7 +74,7 @@ export default function Home() {
       {/* Footer area simple for landing */}
       <footer className="w-full py-12 border-t border-outline-variant/10 mt-auto">
         <div className="max-w-7xl mx-auto px-6 flex flex-col md:flex-row justify-between items-center gap-4">
-          <div className="text-xl font-bold signature-gradient bg-clip-text text-transparent">{BRAND_NAME}</div>
+          <div className="text-xl font-bold text-primary">{BRAND_NAME}</div>
           <p className="text-sm text-on-surface-variant">© 2026 {BRAND_NAME}. Bảo lưu mọi quyền.</p>
         </div>
       </footer>

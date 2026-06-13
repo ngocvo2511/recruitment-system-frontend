@@ -1,6 +1,6 @@
 "use client";
 
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useState } from "react";
 import Link from "next/link";
 import { Check, Eye, EyeOff, Loader2, Lock, Mail } from "lucide-react";
@@ -10,6 +10,7 @@ import {
   getHomePathForAccount,
   getStoredAccountType,
   getStoredToken,
+  isTokenExpired,
   normalizeAccountType,
   saveAuthSession,
 } from "@/lib/authSession";
@@ -19,17 +20,24 @@ const LOGIN_ERROR_MESSAGE = "Thông tin đăng nhập admin không hợp lệ.";
 
 function AdminLoginForm() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const sessionExpired = searchParams.get("reason") === "session-expired";
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [errorMessage, setErrorMessage] = useState("");
+  const [errorMessage, setErrorMessage] = useState(sessionExpired ? "Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại." : "");
 
   useEffect(() => {
     const token = getStoredToken();
     const accountType = getStoredAccountType();
     if (token && accountType === "admin") {
+      if (isTokenExpired(token)) {
+        clearAuthSession();
+        router.replace("/admin/login?reason=session-expired");
+        return;
+      }
       router.replace("/admin/dashboard");
     }
   }, [router]);
