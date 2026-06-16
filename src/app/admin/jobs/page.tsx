@@ -61,6 +61,7 @@ export default function AdminJobManagementPage() {
   const [auditLogs, setAuditLogs] = useState<AdminAuditLogResponse[]>([]);
   const [pendingAction, setPendingAction] = useState<{ job: AdminJobResponse; action: "approve" | "reject" | "flag" | "unflag" | "close" } | null>(null);
   const [reason, setReason] = useState("");
+  const [actionError, setActionError] = useState<string | null>(null);
 
   useEffect(() => {
     let active = true;
@@ -119,12 +120,12 @@ export default function AdminJobManagementPage() {
   const submitAction = async () => {
     if (!pendingAction) return;
     if (!reason.trim()) {
-      setErrorMessage("Vui lòng nhập lý do kiểm duyệt.");
+      setActionError("Vui lòng nhập lý do kiểm duyệt.");
       return;
     }
     const { job, action } = pendingAction;
     setUpdatingId(job.id);
-    setErrorMessage(null);
+    setActionError(null);
     try {
       const updated =
         action === "approve"
@@ -140,7 +141,7 @@ export default function AdminJobManagementPage() {
       setPendingAction(null);
       setReason("");
     } catch (error) {
-      setErrorMessage(error instanceof ApiError ? error.message : "Không thể cập nhật trạng thái tin tuyển dụng.");
+      setActionError(error instanceof ApiError ? error.message : "Không thể cập nhật trạng thái tin tuyển dụng.");
     } finally {
       setUpdatingId(null);
     }
@@ -191,10 +192,11 @@ export default function AdminJobManagementPage() {
                   <td className="px-6 py-6 text-center"><span className={`px-3 py-1 text-[10px] font-bold uppercase rounded-full border ${statusClass(job.status)}`}>{STATUS_LABELS[job.status]}</span></td>
                   <td className="px-8 py-6 text-right"><div className="flex justify-end items-center gap-2">
                     <button type="button" onClick={() => setSelectedJob(job)} className="p-2 text-primary hover:bg-primary/10 rounded-full" title="Chi tiết"><Eye className="w-5 h-5" /></button>
-                    {job.status !== "PUBLISHED" && <button type="button" onClick={() => { setPendingAction({ job, action: "approve" }); setReason(""); }} disabled={updatingId === job.id} className="px-4 py-1.5 bg-primary text-on-primary rounded-full text-xs font-bold disabled:opacity-50">Duyệt</button>}
-                    {job.status !== "REJECTED" && <button type="button" onClick={() => { setPendingAction({ job, action: "reject" }); setReason(""); }} disabled={updatingId === job.id} className="p-2 text-outline hover:text-error disabled:opacity-50" title="Từ chối"><XCircle className="w-5 h-5" /></button>}
-                    {job.status === "FLAGGED" ? <button type="button" onClick={() => { setPendingAction({ job, action: "unflag" }); setReason(""); }} disabled={updatingId === job.id} className="p-2 text-outline hover:text-primary disabled:opacity-50" title="Gỡ gắn cờ"><CheckCircle className="w-5 h-5" /></button> : <button type="button" onClick={() => { setPendingAction({ job, action: "flag" }); setReason(""); }} disabled={updatingId === job.id} className="p-2 text-outline hover:text-orange-600 disabled:opacity-50" title="Gắn cờ"><Flag className="w-5 h-5" /></button>}
-                    {job.status !== "CLOSED" && <button type="button" onClick={() => { setPendingAction({ job, action: "close" }); setReason(""); }} disabled={updatingId === job.id} className="p-2 text-outline hover:text-error disabled:opacity-50" title="Đóng tin"><Lock className="w-5 h-5" /></button>}
+                    {(job.status === "PENDING" || job.status === "REJECTED") && <button type="button" onClick={() => { setPendingAction({ job, action: "approve" }); setReason(""); }} disabled={updatingId === job.id} className="px-4 py-1.5 bg-primary text-on-primary rounded-full text-xs font-bold disabled:opacity-50">Duyệt</button>}
+                    {job.status === "PENDING" && <button type="button" onClick={() => { setPendingAction({ job, action: "reject" }); setReason(""); }} disabled={updatingId === job.id} className="p-2 text-outline hover:text-error disabled:opacity-50" title="Từ chối"><XCircle className="w-5 h-5" /></button>}
+                    {job.status === "PUBLISHED" && <button type="button" onClick={() => { setPendingAction({ job, action: "flag" }); setReason(""); }} disabled={updatingId === job.id} className="p-2 text-outline hover:text-orange-600 disabled:opacity-50" title="Gắn cờ"><Flag className="w-5 h-5" /></button>}
+                    {job.status === "FLAGGED" && <button type="button" onClick={() => { setPendingAction({ job, action: "unflag" }); setReason(""); }} disabled={updatingId === job.id} className="p-2 text-outline hover:text-primary disabled:opacity-50" title="Gỡ gắn cờ"><CheckCircle className="w-5 h-5" /></button>}
+                    {(job.status === "PUBLISHED" || job.status === "FLAGGED") && <button type="button" onClick={() => { setPendingAction({ job, action: "close" }); setReason(""); }} disabled={updatingId === job.id} className="p-2 text-outline hover:text-error disabled:opacity-50" title="Đóng tin"><Lock className="w-5 h-5" /></button>}
                   </div></td>
                 </tr>
               ))}
@@ -221,8 +223,21 @@ export default function AdminJobManagementPage() {
           <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl">
             <h2 className="text-lg font-extrabold">{pendingAction.action === "approve" ? "Duyệt tin" : pendingAction.action === "reject" ? "Từ chối tin" : pendingAction.action === "flag" ? "Gắn cờ tin" : pendingAction.action === "unflag" ? "Bỏ gắn cờ" : "Đóng tin"}</h2>
             <p className="mt-1 text-sm text-on-surface-variant">{pendingAction.job.title}</p>
-            <textarea value={reason} onChange={(event) => setReason(event.target.value)} className="mt-4 min-h-28 w-full rounded-xl border border-outline-variant/10 p-3 text-sm outline-none focus:ring-2 focus:ring-primary/20" placeholder="Nhập lý do hoặc ghi chú gửi cho recruiter..." />
-            <div className="mt-5 flex justify-end gap-3"><button type="button" onClick={() => setPendingAction(null)} className="rounded-xl px-4 py-2 text-sm font-bold text-on-surface-variant hover:bg-surface-container">Hủy</button><button type="button" onClick={() => void submitAction()} className="rounded-xl bg-primary px-5 py-2 text-sm font-bold text-on-primary">Xác nhận</button></div>
+            <textarea
+              value={reason}
+              onChange={(event) => {
+                setReason(event.target.value);
+                setActionError(null);
+              }}
+              className="mt-4 min-h-28 w-full rounded-xl border border-outline-variant/10 p-3 text-sm outline-none focus:ring-2 focus:ring-primary/20"
+              placeholder="Nhập lý do hoặc ghi chú gửi cho recruiter..."
+            />
+            {actionError && (
+              <div className="mt-3 rounded-xl border border-error/20 bg-error/10 px-4 py-3 text-sm font-medium text-error">
+                {actionError}
+              </div>
+            )}
+            <div className="mt-5 flex justify-end gap-3"><button type="button" onClick={() => { setPendingAction(null); setActionError(null); }} className="rounded-xl px-4 py-2 text-sm font-bold text-on-surface-variant hover:bg-surface-container">Hủy</button><button type="button" onClick={() => void submitAction()} className="rounded-xl bg-primary px-5 py-2 text-sm font-bold text-on-primary">Xác nhận</button></div>
           </div>
         </div>
       )}

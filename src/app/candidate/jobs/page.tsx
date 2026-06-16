@@ -5,12 +5,14 @@ import { Search, MapPin, Clock, Building2, ChevronRight, Sparkles, Bookmark } fr
 import Link from "next/link";
 import {
   ApiError,
+  getJobCategories,
   getSavedJobs,
   getJobRecommendations,
   removeSavedJob,
   saveJob,
   searchJobsFts,
   type JobRecommendationResponse,
+  type JobCategory,
   type JobResponse,
 } from "@/lib/api/jobs";
 
@@ -50,9 +52,27 @@ export default function CandidateJobsPage() {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [savedJobIds, setSavedJobIds] = useState<Set<string>>(new Set());
   const [savingJobId, setSavingJobId] = useState<string | null>(null);
+  const [categoryOptions, setCategoryOptions] = useState<JobCategory[]>([]);
+  const [selectedCategory, setSelectedCategory] = useState("");
 
   const [searchQueryInput, setSearchQueryInput] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
+
+  useEffect(() => {
+    getJobCategories()
+      .then(setCategoryOptions)
+      .catch(() => setCategoryOptions([]));
+  }, []);
+
+  useEffect(() => {
+    const initialQuery = new URLSearchParams(window.location.search).get("query")?.trim() ?? "";
+    if (initialQuery) {
+      queueMicrotask(() => {
+        setSearchQueryInput(initialQuery);
+        setSearchQuery(initialQuery);
+      });
+    }
+  }, []);
 
   useEffect(() => {
     let active = true;
@@ -61,7 +81,7 @@ export default function CandidateJobsPage() {
     });
 
     if (!searchQuery || searchQuery.trim() === "") {
-      getJobRecommendations(12)
+      getJobRecommendations(12, undefined, selectedCategory || undefined)
         .then((data) => {
           if (!active) return;
           setJobs(data);
@@ -78,7 +98,7 @@ export default function CandidateJobsPage() {
           setLoading(false);
         });
     } else {
-      searchJobsFts(searchQuery.trim(), 12, "PUBLISHED")
+      searchJobsFts(searchQuery.trim(), 12, "PUBLISHED", selectedCategory || undefined)
         .then((data) => {
           if (!active) return;
           const mapped = data.map(item => ({
@@ -103,7 +123,7 @@ export default function CandidateJobsPage() {
     return () => {
       active = false;
     };
-  }, [searchQuery]);
+  }, [searchQuery, selectedCategory]);
 
   useEffect(() => {
     getSavedJobs()
@@ -187,6 +207,26 @@ export default function CandidateJobsPage() {
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant w-5 h-5" />
               </div>
               
+              {/* Location Filter */}
+              <div>
+                <label className="mb-3 block font-bold text-on-surface" htmlFor="job-category">
+                  Ngành nghề
+                </label>
+                <select
+                  id="job-category"
+                  value={selectedCategory}
+                  onChange={(event) => setSelectedCategory(event.target.value)}
+                  className="w-full rounded-xl border-none bg-surface-container-high px-4 py-3 text-on-surface outline-none focus:ring-2 focus:ring-primary/40"
+                >
+                  <option value="">Tất cả ngành nghề</option>
+                  {categoryOptions.map((category) => (
+                    <option key={category.code} value={category.code}>
+                      {category.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
               {/* Location Filter */}
               <div>
                 <p className="font-bold mb-4 text-on-surface">Địa điểm</p>
@@ -284,6 +324,18 @@ export default function CandidateJobsPage() {
                       Xem chi tiết
                     </Link>
                   </div>
+                  {job.categories.length > 0 && (
+                    <div className="mt-3 flex flex-wrap gap-2">
+                      {job.categories.map((category) => (
+                        <span
+                          key={category.code}
+                          className="rounded-full bg-primary/8 px-3 py-1 text-xs font-bold text-primary"
+                        >
+                          {category.name}
+                        </span>
+                      ))}
+                    </div>
+                  )}
                 </div>
               </div>
             ))}

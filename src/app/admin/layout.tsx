@@ -13,6 +13,7 @@ import {
   ScrollText,
   Settings,
   ShieldCheck,
+  Siren,
   Users,
 } from "lucide-react";
 import { BRAND_NAME } from "@/lib/brand";
@@ -23,6 +24,7 @@ const navItems = [
   { href: "/admin/dashboard", label: "Tổng quan", icon: LayoutDashboard },
   { href: "/admin/users", label: "Người dùng", icon: Users },
   { href: "/admin/jobs", label: "Tin tuyển dụng", icon: Briefcase },
+  { href: "/admin/job-reports", label: "Báo cáo tin", icon: Siren },
   { href: "/admin/company-moderation", label: "Kiểm duyệt công ty", icon: ShieldCheck },
   { href: "/admin/audit-logs", label: "Nhật ký admin", icon: ScrollText },
   { href: "/admin/settings", label: "Cài đặt hệ thống", icon: Settings },

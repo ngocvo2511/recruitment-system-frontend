@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { ArrowLeft, Bookmark, Building2, MapPin, Clock, CheckCircle2, Mic } from "lucide-react";
+import { ArrowLeft, Bookmark, Building2, MapPin, Clock, CheckCircle2, Flag, Mic, X } from "lucide-react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import {
@@ -10,7 +10,9 @@ import {
   getJobMatch,
   isJobSaved,
   removeSavedJob,
+  reportJob,
   saveJob,
+  type JobReportReason,
   type JobMatchScore,
   type JobResponse,
 } from "@/lib/api/jobs";
@@ -119,6 +121,12 @@ export default function JobDetailPage() {
   const [applySuccess, setApplySuccess] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
   const [updatingSaved, setUpdatingSaved] = useState(false);
+  const [showReportForm, setShowReportForm] = useState(false);
+  const [reportReason, setReportReason] = useState<JobReportReason>("MISLEADING_INFORMATION");
+  const [reportDetails, setReportDetails] = useState("");
+  const [reporting, setReporting] = useState(false);
+  const [reportMessage, setReportMessage] = useState<string | null>(null);
+  const [reportError, setReportError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!jobId) {
@@ -176,6 +184,22 @@ export default function JobDetailPage() {
       setErrorMessage(error instanceof ApiError ? error.message : "Không thể cập nhật công việc đã lưu.");
     } finally {
       setUpdatingSaved(false);
+    }
+  };
+
+  const submitReport = async () => {
+    if (!jobId || reporting) return;
+    setReporting(true);
+    setReportError(null);
+    try {
+      await reportJob(jobId, { reason: reportReason, details: reportDetails.trim() || undefined });
+      setShowReportForm(false);
+      setReportDetails("");
+      setReportMessage("Cảm ơn bạn. Báo cáo đã được gửi đến quản trị viên.");
+    } catch (error) {
+      setReportError(error instanceof ApiError ? error.message : "Không thể gửi báo cáo.");
+    } finally {
+      setReporting(false);
     }
   };
 
@@ -430,6 +454,18 @@ export default function JobDetailPage() {
                 <span className="flex items-center gap-1"><MapPin className="w-4 h-4"/> {job.location ?? "--"}</span>
                 <span className="flex items-center gap-1"><Clock className="w-4 h-4"/> Đăng: {formatDate(job.publishedAt ?? job.createdAt)}</span>
               </div>
+              {job.categories.length > 0 && (
+                <div className="mt-3 flex flex-wrap gap-2">
+                  {job.categories.map((category) => (
+                    <span
+                      key={category.code}
+                      className="rounded-full bg-primary/8 px-3 py-1 text-xs font-bold text-primary"
+                    >
+                      {category.name}
+                    </span>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
           <div className="flex md:flex-col items-center md:items-end gap-3 w-full md:w-auto">
@@ -446,6 +482,17 @@ export default function JobDetailPage() {
             >
               <Bookmark className={`h-4 w-4 ${saved ? "fill-current" : ""}`} />
               {saved ? "Đã lưu" : "Lưu công việc"}
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setReportError(null);
+                setShowReportForm(true);
+              }}
+              className="inline-flex w-full items-center justify-center gap-2 rounded-full px-5 py-2 text-sm font-semibold text-error hover:bg-error/10 md:w-auto"
+            >
+              <Flag className="h-4 w-4" />
+              Báo cáo tin
             </button>
             <Link
               href={`/candidate/jobs/${job.id}/mock-interview/setup`}
@@ -468,6 +515,12 @@ export default function JobDetailPage() {
             </button>
           </div>
         </div>
+
+        {reportMessage && (
+          <div className="mb-8 rounded-xl border border-outline-variant/20 bg-surface-container-low px-4 py-3 text-sm text-on-surface-variant">
+            {reportMessage}
+          </div>
+        )}
 
         {(showApplyForm || currentApplication || applySuccess) && (
           <div className="mb-10 rounded-2xl border border-primary/20 bg-primary-container/10 p-6">
@@ -744,6 +797,58 @@ export default function JobDetailPage() {
           </section>
         </div>
       </div>
+
+      {showReportForm && (
+        <div className="fixed inset-0 z-[90] flex items-center justify-center bg-slate-950/50 p-4">
+          <div className="w-full max-w-md rounded-lg bg-white p-6 shadow-2xl">
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <h2 className="text-xl font-bold text-on-surface">Báo cáo tin tuyển dụng</h2>
+                <p className="mt-1 text-sm text-on-surface-variant">{job.title}</p>
+              </div>
+              <button type="button" onClick={() => setShowReportForm(false)} aria-label="Đóng">
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+            <label className="mt-5 block text-sm font-semibold">
+              Lý do
+              <select
+                value={reportReason}
+                onChange={(event) => setReportReason(event.target.value as JobReportReason)}
+                className="mt-2 w-full rounded-lg border border-outline-variant/30 bg-white px-3 py-3 outline-none focus:ring-2 focus:ring-primary/30"
+              >
+                <option value="MISLEADING_INFORMATION">Thông tin sai lệch</option>
+                <option value="SCAM_OR_FRAUD">Có dấu hiệu lừa đảo</option>
+                <option value="DISCRIMINATION">Nội dung phân biệt đối xử</option>
+                <option value="INAPPROPRIATE_CONTENT">Nội dung không phù hợp</option>
+                <option value="DUPLICATE_OR_EXPIRED">Tin trùng hoặc đã hết hạn</option>
+                <option value="OTHER">Lý do khác</option>
+              </select>
+            </label>
+            <label className="mt-4 block text-sm font-semibold">
+              Mô tả thêm
+              <textarea
+                value={reportDetails}
+                onChange={(event) => setReportDetails(event.target.value)}
+                maxLength={2000}
+                className="mt-2 min-h-28 w-full rounded-lg border border-outline-variant/30 p-3 outline-none focus:ring-2 focus:ring-primary/30"
+                placeholder="Mô tả vấn đề để quản trị viên kiểm tra..."
+              />
+            </label>
+            {reportError && (
+              <div className="mt-4 rounded-lg border border-error/20 bg-error/10 px-4 py-3 text-sm font-medium text-error">
+                {reportError}
+              </div>
+            )}
+            <div className="mt-6 flex justify-end gap-3">
+              <button type="button" onClick={() => setShowReportForm(false)} className="px-4 py-2 font-semibold text-on-surface-variant">Hủy</button>
+              <button type="button" disabled={reporting} onClick={() => void submitReport()} className="rounded-lg bg-error px-5 py-2 font-bold text-white disabled:opacity-50">
+                {reporting ? "Đang gửi..." : "Gửi báo cáo"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

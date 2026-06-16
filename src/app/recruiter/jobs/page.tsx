@@ -146,6 +146,11 @@ export default function RecruiterJobManagementPage() {
                         <span className="text-xs text-on-surface-variant">
                           {[job.employmentType, job.workMode, job.level, job.location].filter(Boolean).join(" · ")}
                         </span>
+                        {job.categories.length > 0 && (
+                          <span className="text-xs font-medium text-on-surface-variant">
+                            {job.categories.map((category) => category.name).join(", ")}
+                          </span>
+                        )}
                         <span className="text-xs font-semibold text-primary">{formatSalary(job)}</span>
                       </div>
                     </td>

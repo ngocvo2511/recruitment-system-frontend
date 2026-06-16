@@ -8,6 +8,25 @@ export type ApiResponse<T> = {
 
 export type CompanyStatus = "PENDING" | "ACTIVE" | "REJECTED" | "BLOCKED";
 export type JobStatus = "DRAFT" | "PENDING" | "PUBLISHED" | "REJECTED" | "FLAGGED" | "CLOSED";
+export type JobReportStatus = "PENDING" | "RESOLVED" | "DISMISSED";
+export type JobReportReason = "MISLEADING_INFORMATION" | "SCAM_OR_FRAUD" | "DISCRIMINATION" | "INAPPROPRIATE_CONTENT" | "DUPLICATE_OR_EXPIRED" | "OTHER";
+
+export type JobReportResponse = {
+  id: string;
+  jobId: string;
+  jobTitle: string;
+  companyName?: string | null;
+  jobStatus: JobStatus;
+  reporterId: string;
+  reporterEmail: string;
+  reason: JobReportReason;
+  details?: string | null;
+  status: JobReportStatus;
+  adminNote?: string | null;
+  reviewedByEmail?: string | null;
+  createdAt: string;
+  reviewedAt?: string | null;
+};
 
 export type AdminDashboardMetrics = {
   totalUsers: number;
@@ -381,6 +400,29 @@ export function unflagAdminJob(jobId: string, reason?: string): Promise<AdminJob
 
 export function closeAdminJob(jobId: string, reason?: string): Promise<AdminJobResponse> {
   return request<AdminJobResponse>(`/api/admin/jobs/${jobId}/close`, moderationBody(reason));
+}
+
+export function getAdminJobReports(params: {
+  page?: number;
+  size?: number;
+  status?: JobReportStatus | "ALL";
+} = {}): Promise<AdminPageResponse<JobReportResponse>> {
+  const search = new URLSearchParams();
+  search.set("page", String(params.page ?? 0));
+  search.set("size", String(params.size ?? 20));
+  if (params.status && params.status !== "ALL") search.set("status", params.status);
+  return request<AdminPageResponse<JobReportResponse>>(`/api/admin/job-reports?${search.toString()}`);
+}
+
+export function reviewAdminJobReport(
+  reportId: string,
+  status: "RESOLVED" | "DISMISSED",
+  adminNote?: string,
+): Promise<JobReportResponse> {
+  return request<JobReportResponse>(`/api/admin/job-reports/${reportId}`, {
+    method: "PATCH",
+    body: JSON.stringify({ status, adminNote }),
+  });
 }
 
 export function getAdminAnalyticsOverview(params: {

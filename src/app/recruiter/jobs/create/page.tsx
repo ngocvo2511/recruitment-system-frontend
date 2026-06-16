@@ -1,11 +1,13 @@
 "use client";
 
-import { FormEvent, useState } from "react";
+import { FormEvent, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ChevronDown, Loader2, MapPin, Plus, Save, Send, Sparkles, Trash2 } from "lucide-react";
 import {
   createJob,
+  getJobCategories,
   type EmploymentType,
+  type JobCategory,
   type JobLevel,
   type JobPayload,
   type JobRequirementSection,
@@ -64,10 +66,18 @@ export default function CreateJobPage() {
     salaryNegotiable: false,
     headcount: 1,
     deadline: null,
+    categories: [],
     requirementSections: [defaultSection()],
   });
+  const [categoryOptions, setCategoryOptions] = useState<JobCategory[]>([]);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
+
+  useEffect(() => {
+    getJobCategories()
+      .then(setCategoryOptions)
+      .catch(() => setError("Không thể tải danh sách ngành nghề."));
+  }, []);
 
   const updateField = <K extends keyof JobPayload>(field: K, value: JobPayload[K]) => {
     setForm((current) => ({ ...current, [field]: value }));
@@ -160,8 +170,12 @@ export default function CreateJobPage() {
 
   const handleSubmit = async (event: FormEvent) => {
     event.preventDefault();
-    setSubmitting(true);
     setError("");
+    if (form.categories.length === 0) {
+      setError("Vui lòng chọn ít nhất một ngành nghề.");
+      return;
+    }
+    setSubmitting(true);
 
     try {
       await createJob(cleanPayload());
@@ -200,6 +214,41 @@ export default function CreateJobPage() {
               <span className="text-xs font-bold uppercase tracking-wider text-on-surface-variant">Tên vị trí</span>
               <input required value={form.title} onChange={(event) => updateField("title", event.target.value)} className="w-full bg-surface-container-high/50 rounded-lg px-4 py-3 outline-none focus:ring-2 focus:ring-primary/30" placeholder="Backend Developer" />
             </label>
+            <fieldset className="md:col-span-2 space-y-3">
+              <legend className="text-xs font-bold uppercase tracking-wider text-on-surface-variant">
+                Ngành nghề
+              </legend>
+              <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3">
+                {categoryOptions.map((category) => {
+                  const checked = form.categories.some((item) => item.code === category.code);
+                  return (
+                    <label
+                      key={category.code}
+                      className={`flex cursor-pointer items-center gap-3 rounded-lg border px-4 py-3 text-sm font-semibold transition-colors ${
+                        checked
+                          ? "border-primary bg-primary/5 text-primary"
+                          : "border-outline-variant/20 bg-surface-container-lowest text-on-surface"
+                      }`}
+                    >
+                      <input
+                        checked={checked}
+                        className="h-4 w-4 accent-primary"
+                        type="checkbox"
+                        onChange={() =>
+                          updateField(
+                            "categories",
+                            checked
+                              ? form.categories.filter((item) => item.code !== category.code)
+                              : [...form.categories, category],
+                          )
+                        }
+                      />
+                      <span>{category.name}</span>
+                    </label>
+                  );
+                })}
+              </div>
+            </fieldset>
             <label className="space-y-2">
               <span className="text-xs font-bold uppercase tracking-wider text-on-surface-variant">Địa điểm</span>
               <div className="relative">

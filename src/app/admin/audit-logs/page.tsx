@@ -20,6 +20,8 @@ const ACTION_LABELS: Record<string, string> = {
   JOB_FLAGGED: "Gắn cờ tin",
   JOB_UNFLAGGED: "Bỏ gắn cờ",
   JOB_CLOSED: "Đóng tin",
+  SETTINGS_UPDATED: "Cập nhật cài đặt hệ thống",
+  REVIEW_JOB_REPORT: "Xử lý báo cáo tin",
 };
 
 function formatDateTime(value?: string | null): string {
@@ -33,8 +35,22 @@ function formatDateTime(value?: string | null): string {
 }
 
 function targetLabel(log: AdminAuditLogResponse): string {
-  const label = log.targetType === "COMPANY" ? "Công ty" : log.targetType === "JOB" ? "Tin tuyển dụng" : "Người dùng";
+  const labels: Record<string, string> = {
+    COMPANY: "Công ty",
+    JOB: "Tin tuyển dụng",
+    JOB_REPORT: "Báo cáo tin",
+    SETTINGS: "Cài đặt",
+    USER: "Người dùng",
+  };
+  const label = labels[log.targetType] ?? "Đối tượng";
   return `${label} ${log.targetId.slice(0, 8)}`;
+}
+
+function reasonLabel(reason?: string | null): string {
+  if (!reason) return "--";
+  return reason
+    .replace(/^RESOLVED(?=:|$)/, "Đã xử lý")
+    .replace(/^DISMISSED(?=:|$)/, "Đã bỏ qua");
 }
 
 export default function AdminAuditLogsPage() {
@@ -138,6 +154,8 @@ export default function AdminAuditLogsPage() {
           <option value="USER">Người dùng</option>
           <option value="COMPANY">Công ty</option>
           <option value="JOB">Tin tuyển dụng</option>
+          <option value="JOB_REPORT">Báo cáo tin</option>
+          <option value="SETTINGS">Cài đặt</option>
         </select>
         <input value={targetId} onChange={(event) => setTargetId(event.target.value)} className="rounded-xl bg-surface-container-lowest border border-outline-variant/10 px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-primary/20" placeholder="ID đối tượng" />
         <input type="date" value={fromDate} onChange={(event) => setFromDate(event.target.value)} className="rounded-xl bg-surface-container-lowest border border-outline-variant/10 px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-primary/20" />
@@ -183,7 +201,7 @@ export default function AdminAuditLogsPage() {
                       </span>
                     </td>
                     <td className="px-6 py-5 text-sm text-on-surface-variant">{targetLabel(log)}</td>
-                    <td className="px-6 py-5 text-sm text-on-surface-variant">{log.reason || "--"}</td>
+                    <td className="px-6 py-5 text-sm text-on-surface-variant">{reasonLabel(log.reason)}</td>
                   </tr>
                 ))
               )}

@@ -12,6 +12,11 @@ export type JobLevel = "INTERN" | "FRESHER" | "JUNIOR" | "MIDDLE" | "SENIOR" | "
 export type JobStatus = "DRAFT" | "PENDING" | "PUBLISHED" | "REJECTED" | "FLAGGED" | "CLOSED";
 export type RequirementSectionType = "REQUIRED" | "PREFERRED" | "OTHER";
 
+export type JobCategory = {
+  code: string;
+  name: string;
+};
+
 export type JobRequirementItem = {
   id?: string;
   content: string;
@@ -40,6 +45,7 @@ export type JobPayload = {
   salaryNegotiable?: boolean;
   headcount?: number | null;
   deadline?: string | null;
+  categories: JobCategory[];
   requirementSections: JobRequirementSection[];
 };
 
@@ -75,6 +81,14 @@ export type SavedJobResponse = {
   job: JobResponse;
   savedAt: string;
 };
+
+export type JobReportReason =
+  | "MISLEADING_INFORMATION"
+  | "SCAM_OR_FRAUD"
+  | "DISCRIMINATION"
+  | "INAPPROPRIATE_CONTENT"
+  | "DUPLICATE_OR_EXPIRED"
+  | "OTHER";
 
 export type CvItemResponse = {
   id: string;
@@ -176,11 +190,22 @@ export function getJobMatch(jobId: string, cvId?: string): Promise<JobMatchScore
   return request<JobMatchScore>(`/api/jobs/${jobId}/match${params}`);
 }
 
-export function getJobRecommendations(topK = 10, cvId?: string): Promise<JobRecommendationResponse[]> {
+export function getJobCategories(): Promise<JobCategory[]> {
+  return request<JobCategory[]>("/api/job-categories");
+}
+
+export function getJobRecommendations(
+  topK = 10,
+  cvId?: string,
+  categoryCode?: string,
+): Promise<JobRecommendationResponse[]> {
   const params = new URLSearchParams();
   params.set("topK", String(topK));
   if (cvId) {
     params.set("cvId", cvId);
+  }
+  if (categoryCode) {
+    params.set("categoryCode", categoryCode);
   }
   return request<JobRecommendationResponse[]>(`/api/jobs/recommendations?${params.toString()}`);
 }
@@ -190,12 +215,20 @@ export type JobFtsSearchResponse = {
   rank?: number | null;
 };
 
-export function searchJobsFts(query: string, limit = 10, status?: string): Promise<JobFtsSearchResponse[]> {
+export function searchJobsFts(
+  query: string,
+  limit = 10,
+  status?: string,
+  categoryCode?: string,
+): Promise<JobFtsSearchResponse[]> {
   const params = new URLSearchParams();
   params.set("q", query);
   params.set("limit", String(limit));
   if (status) {
     params.set("status", status);
+  }
+  if (categoryCode) {
+    params.set("categoryCode", categoryCode);
   }
   return request<JobFtsSearchResponse[]>(`/api/search/fts/jobs?${params.toString()}`);
 }
@@ -235,5 +268,15 @@ export function saveJob(jobId: string): Promise<SavedJobResponse> {
 export function removeSavedJob(jobId: string): Promise<void> {
   return request<void>(`/api/candidate/saved-jobs/${jobId}`, {
     method: "DELETE",
+  });
+}
+
+export function reportJob(jobId: string, payload: {
+  reason: JobReportReason;
+  details?: string;
+}): Promise<void> {
+  return request<void>(`/api/candidate/jobs/${jobId}/reports`, {
+    method: "POST",
+    body: JSON.stringify(payload),
   });
 }
