@@ -155,7 +155,7 @@ export default function ApplicationsPage() {
                   <div className="flex flex-col gap-3 md:items-end">
                     <span className={`px-4 py-1.5 text-xs font-bold rounded-full uppercase ${meta.className}`}>{meta.label}</span>
                     {application.aiScore != null && (
-                      <span className="text-sm font-bold text-secondary">{Math.round(application.aiScore)}% AI match</span>
+                      <span className="text-sm font-bold text-secondary" title={`Điểm AI Match được tính lúc nộp đơn (${formatDate(application.appliedAt)})`}>{Math.round(application.aiScore)}% AI match <span className="text-xs font-medium text-on-surface-variant">(lúc nộp đơn)</span></span>
                     )}
                   </div>
                 </div>

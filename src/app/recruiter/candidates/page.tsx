@@ -219,10 +219,11 @@ export default function CandidateDatabasePage() {
                         {matchScore == null ? (
                           <span className="text-sm text-on-surface-variant">--</span>
                         ) : (
-                          <div className="flex flex-col gap-1.5">
+                          <div className="flex flex-col gap-1.5" title={`Điểm AI Match được tính lúc ứng viên nộp đơn (${formatDate(latest.appliedAt)}). Xem trang "Gợi ý AI" để xem điểm real-time.`}>
                             <div className="flex items-center gap-2">
                               <span className="px-2 py-0.5 bg-primary/10 text-primary text-[9px] font-black uppercase rounded-sm border border-primary/20">AI Match</span>
                               <span className="text-sm font-black text-secondary">{matchScore}%</span>
+                              <span className="text-[10px] text-on-surface-variant">(lúc nộp đơn)</span>
                             </div>
                             <div className="w-20 h-1.5 bg-surface-container-highest rounded-full overflow-hidden">
                               <div className="h-full signature-gradient" style={{ width: `${matchScore}%` }} />

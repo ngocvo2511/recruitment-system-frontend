@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { Ban, CalendarDays, Edit2, Eye, Filter, Loader2, Plus, Trash2 } from "lucide-react";
-import { getJobs, type JobResponse, type JobStatus } from "@/lib/api/jobs";
+import { getJobs, type JobSummaryResponse, type JobStatus, type Page } from "@/lib/api/jobs";
 
 const statusLabel: Record<JobStatus, string> = {
   DRAFT: "Bản nháp",
@@ -23,7 +23,7 @@ const statusClass: Record<JobStatus, string> = {
   CLOSED: "bg-surface-container text-on-surface-variant",
 };
 
-function formatSalary(job: JobResponse) {
+function formatSalary(job: JobSummaryResponse) {
   if (job.salaryNegotiable) return "Lương thỏa thuận";
   const currency = job.currency ? ` ${job.currency}` : "";
   if (job.minSalary && job.maxSalary) {
@@ -40,7 +40,9 @@ function formatDate(value?: string | null) {
 }
 
 export default function RecruiterJobManagementPage() {
-  const [jobs, setJobs] = useState<JobResponse[]>([]);
+  const [jobs, setJobs] = useState<JobSummaryResponse[]>([]);
+  const [pageData, setPageData] = useState<Page<JobSummaryResponse> | null>(null);
+  const [page, setPage] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
@@ -50,8 +52,11 @@ export default function RecruiterJobManagementPage() {
       setLoading(true);
       setError("");
       try {
-        const result = await getJobs();
-        if (mounted) setJobs(result);
+        const result = await getJobs(page, 10);
+        if (mounted) {
+          setPageData(result);
+          setJobs(result.content);
+        }
       } catch (err) {
         if (mounted) setError(err instanceof Error ? err.message : "Không thể tải danh sách tin tuyển dụng.");
       } finally {
@@ -62,14 +67,16 @@ export default function RecruiterJobManagementPage() {
     return () => {
       mounted = false;
     };
-  }, []);
+  }, [page]);
 
   const stats = useMemo(() => {
+    // Note: To get real stats across all pages, the backend should provide an endpoint.
+    // For now, we only have stats for the current page.
     const published = jobs.filter((job) => job.status === "PUBLISHED").length;
     const pending = jobs.filter((job) => job.status === "PENDING").length;
     const closed = jobs.filter((job) => job.status === "CLOSED").length;
-    return { published, pending, closed, total: jobs.length };
-  }, [jobs]);
+    return { published, pending, closed, total: pageData?.totalElements || 0 };
+  }, [jobs, pageData]);
 
   return (
     <div className="max-w-7xl mx-auto animate-fade-in-up">
@@ -183,6 +190,30 @@ export default function RecruiterJobManagementPage() {
                 ))}
               </tbody>
             </table>
+            
+            {pageData && pageData.totalPages > 1 && (
+              <div className="flex items-center justify-between px-8 py-4 bg-surface-container-low/30 border-t border-outline-variant/10">
+                <span className="text-sm text-on-surface-variant">
+                  Hiển thị {pageData.number * pageData.size + 1} đến {Math.min((pageData.number + 1) * pageData.size, pageData.totalElements)} trong số {pageData.totalElements} tin
+                </span>
+                <div className="flex gap-2">
+                  <button
+                    disabled={pageData.first}
+                    onClick={() => setPage(page - 1)}
+                    className="px-4 py-2 text-sm font-semibold border rounded-lg border-outline-variant/30 text-on-surface disabled:opacity-50 hover:bg-surface-container transition-colors"
+                  >
+                    Trước
+                  </button>
+                  <button
+                    disabled={pageData.last}
+                    onClick={() => setPage(page + 1)}
+                    className="px-4 py-2 text-sm font-semibold border rounded-lg border-outline-variant/30 text-on-surface disabled:opacity-50 hover:bg-surface-container transition-colors"
+                  >
+                    Tiếp
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         )}
       </div>

@@ -6,6 +6,22 @@ export type ApiResponse<T> = {
   result: T;
 };
 
+export type Page<T> = {
+  content: T[];
+  pageable: {
+    pageNumber: number;
+    pageSize: number;
+  };
+  totalElements: number;
+  totalPages: number;
+  size: number;
+  number: number;
+  first: boolean;
+  last: boolean;
+  empty: boolean;
+};
+
+
 export type EmploymentType = "FULL_TIME" | "PART_TIME" | "CONTRACT" | "INTERNSHIP";
 export type WorkMode = "ONSITE" | "REMOTE" | "HYBRID";
 export type JobLevel = "INTERN" | "FRESHER" | "JUNIOR" | "MIDDLE" | "SENIOR" | "LEAD";
@@ -59,6 +75,25 @@ export type JobResponse = JobPayload & {
   publishedAt?: string | null;
   closedAt?: string | null;
   recruiterId?: string | null;
+};
+
+export type JobSummaryResponse = {
+  id: string;
+  title: string;
+  location?: string | null;
+  employmentType?: EmploymentType | null;
+  workMode?: WorkMode | null;
+  level?: JobLevel | null;
+  minSalary?: number | null;
+  maxSalary?: number | null;
+  currency?: string | null;
+  salaryNegotiable?: boolean | null;
+  companyId?: string | null;
+  companyName?: string | null;
+  status: JobStatus;
+  createdAt?: string | null;
+  publishedAt?: string | null;
+  categories: JobCategory[];
 };
 
 export type JobMatchScore = {
@@ -177,8 +212,8 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
   return (payload as ApiResponse<T>).result;
 }
 
-export function getJobs(): Promise<JobResponse[]> {
-  return request<JobResponse[]>("/api/jobs");
+export function getJobs(page: number = 0, size: number = 10): Promise<Page<JobSummaryResponse>> {
+  return request<Page<JobSummaryResponse>>(`/api/jobs?page=${page}&size=${size}`);
 }
 
 export function getJobById(jobId: string): Promise<JobResponse> {

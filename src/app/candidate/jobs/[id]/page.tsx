@@ -146,18 +146,8 @@ export default function JobDetailPage() {
         const message = error instanceof ApiError ? error.message : "Không thể tải tin tuyển dụng.";
         setErrorMessage(message);
         setJob(null);
-      }
-
-      try {
-        const matchData = await getJobMatch(jobId);
-        if (!active) return;
-        setMatch(matchData);
-      } catch {
-        if (!active) return;
-        setMatch(null);
       } finally {
-        if (!active) return;
-        setLoading(false);
+        if (active) setLoading(false);
       }
     };
 
@@ -167,6 +157,27 @@ export default function JobDetailPage() {
       active = false;
     };
   }, [jobId]);
+
+  // Reload match score when selectedCvId changes to keep it in sync with the CV review section.
+  // This ensures the circular score and the review score are always based on the same CV.
+  useEffect(() => {
+    if (!jobId) return;
+    let active = true;
+    const loadMatch = async () => {
+      try {
+        const matchData = await getJobMatch(jobId, selectedCvId ?? undefined);
+        if (!active) return;
+        setMatch(matchData);
+      } catch {
+        if (!active) return;
+        setMatch(null);
+      }
+    };
+    void loadMatch();
+    return () => {
+      active = false;
+    };
+  }, [jobId, selectedCvId]);
 
   useEffect(() => {
     if (!jobId) return;
@@ -620,7 +631,7 @@ export default function JobDetailPage() {
             </div>
             
             <div className="flex-1 w-full space-y-4">
-              <h3 className="font-bold text-xl text-on-surface">Phân tích mức độ phù hợp AI</h3>
+              <h3 className="font-bold text-xl text-on-surface">Điểm so khớp AI <span className="text-xs font-medium text-on-surface-variant">(Hybrid Matching)</span></h3>
               <p className="text-sm text-on-surface-variant leading-relaxed">
                 Thuật toán Hybrid Matching đánh giá CV của bạn dựa trên 3 tiêu chí cốt lõi: Kỹ năng chuyên môn, kinh nghiệm làm việc và yêu cầu cụ thể của vị trí này.
               </p>
@@ -734,8 +745,8 @@ export default function JobDetailPage() {
                 </div>
                 <div className="flex flex-col gap-2">
                   {review?.fitScore != null && (
-                    <div className="rounded-xl bg-primary/10 text-primary px-4 py-2 text-sm font-bold text-center">
-                      Điểm phù hợp: {review.fitScore}%
+                    <div className="rounded-xl bg-primary/10 text-primary px-4 py-2 text-sm font-bold text-center" title="Điểm này được LLM AI đánh giá nội dung CV, khác với điểm Hybrid Matching phía trên">
+                      Điểm đánh giá AI (LLM): {review.fitScore}%
                     </div>
                   )}
                   {review?.status === "FAILED" && (

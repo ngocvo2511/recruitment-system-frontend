@@ -57,6 +57,7 @@ export default function CandidateJobsPage() {
 
   const [searchQueryInput, setSearchQueryInput] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
+  const [limit, setLimit] = useState(12);
 
   useEffect(() => {
     getJobCategories()
@@ -81,7 +82,7 @@ export default function CandidateJobsPage() {
     });
 
     if (!searchQuery || searchQuery.trim() === "") {
-      getJobRecommendations(12, undefined, selectedCategory || undefined)
+      getJobRecommendations(limit, undefined, selectedCategory || undefined)
         .then((data) => {
           if (!active) return;
           setJobs(data);
@@ -98,12 +99,14 @@ export default function CandidateJobsPage() {
           setLoading(false);
         });
     } else {
-      searchJobsFts(searchQuery.trim(), 12, "PUBLISHED", selectedCategory || undefined)
+      searchJobsFts(searchQuery.trim(), limit, "PUBLISHED", selectedCategory || undefined)
         .then((data) => {
           if (!active) return;
           const mapped = data.map(item => ({
             job: item.job,
-            matchScore: item.rank ? Math.round(item.rank * 100) : null
+            // FTS rank is a keyword relevance score, not an AI match score.
+            // Do not display it as "% Phù hợp AI" to avoid confusion.
+            matchScore: null
           }));
           setJobs(mapped);
           setErrorMessage(null);
@@ -123,7 +126,7 @@ export default function CandidateJobsPage() {
     return () => {
       active = false;
     };
-  }, [searchQuery, selectedCategory]);
+  }, [searchQuery, selectedCategory, limit]);
 
   useEffect(() => {
     getSavedJobs()
@@ -341,9 +344,16 @@ export default function CandidateJobsPage() {
             ))}
           </div>
 
-          <div className="mt-12 flex justify-center">
-            <button className="px-8 py-3 bg-white/50 border border-outline-variant/30 rounded-full font-bold hover:bg-white transition-colors text-on-surface">Tải thêm việc làm</button>
-          </div>
+          {jobList.length > 0 && jobList.length >= limit && (
+            <div className="mt-12 flex justify-center">
+              <button 
+                onClick={() => setLimit(l => l + 12)}
+                className="px-8 py-3 bg-white/50 border border-outline-variant/30 rounded-full font-bold hover:bg-white transition-colors text-on-surface"
+              >
+                Tải thêm việc làm
+              </button>
+            </div>
+          )}
         </div>
       </section>
     </div>

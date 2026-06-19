@@ -220,11 +220,12 @@ export default function PipelineKanban() {
                               </div>
                             </div>
                             {application.aiScore != null && (
-                              <div className="flex flex-col items-end gap-1">
+                              <div className="flex flex-col items-end gap-1" title={`Điểm AI Match được tính lúc nộp đơn (${formatDate(application.appliedAt)})`}>
                                 <span className="text-[9px] font-black uppercase text-primary tracking-widest">AI Match</span>
                                 <span className="signature-gradient text-white text-[10px] font-black px-2 py-0.5 rounded-full shadow-sm">
                                   {Math.round(application.aiScore)}%
                                 </span>
+                                <span className="text-[8px] text-on-surface-variant">(lúc nộp đơn)</span>
                               </div>
                             )}
                           </div>
