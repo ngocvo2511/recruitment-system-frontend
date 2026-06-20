@@ -24,6 +24,7 @@ function LoginForm() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const requestedRole = searchParams.get("role");
+  const callbackUrl = searchParams.get("callbackUrl");
   const initialRole: PublicLoginRole = requestedRole === "recruiter" ? "recruiter" : "candidate";
   const sessionExpired = searchParams.get("reason") === "session-expired";
 
@@ -40,12 +41,18 @@ function LoginForm() {
     if (token && accountType) {
       if (isTokenExpired(token)) {
         clearAuthSession();
-        router.replace("/login?reason=session-expired");
+        let redirectUrl = "/login?reason=session-expired";
+        if (callbackUrl) redirectUrl += `&callbackUrl=${encodeURIComponent(callbackUrl)}`;
+        router.replace(redirectUrl);
         return;
       }
-      router.replace(getHomePathForAccount(accountType));
+      if (callbackUrl && callbackUrl.startsWith("/")) {
+        router.replace(callbackUrl);
+      } else {
+        router.replace(getHomePathForAccount(accountType));
+      }
     }
-  }, [router]);
+  }, [router, callbackUrl]);
 
   const handleLogin = async (event: React.FormEvent) => {
     event.preventDefault();
@@ -86,7 +93,11 @@ function LoginForm() {
         }
 
         saveAuthSession(token, accountType, data.result.userId);
-        router.replace(getHomePathForAccount(accountType));
+        if (callbackUrl && callbackUrl.startsWith("/")) {
+          router.replace(callbackUrl);
+        } else {
+          router.replace(getHomePathForAccount(accountType));
+        }
         return;
       }
 

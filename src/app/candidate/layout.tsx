@@ -41,13 +41,15 @@ export default function CandidateLayout({
       const accountType = getStoredAccountType();
 
       if (!token || !accountType) {
-        router.replace("/login?role=candidate");
+        const currentUrl = pathname + window.location.search;
+        router.replace(`/login?role=candidate&callbackUrl=${encodeURIComponent(currentUrl)}`);
         return;
       }
 
       if (isTokenExpired(token)) {
         clearAuthSession();
-        router.replace("/login?reason=session-expired");
+        const currentUrl = pathname + window.location.search;
+        router.replace(`/login?reason=session-expired&callbackUrl=${encodeURIComponent(currentUrl)}`);
         return;
       }
 
