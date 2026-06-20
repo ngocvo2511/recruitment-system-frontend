@@ -6,9 +6,11 @@ import { ChevronDown, Loader2, MapPin, Plus, Save, Send, Sparkles, Trash2 } from
 import {
   createJob,
   getJobCategories,
+  getLocations,
   type EmploymentType,
   type JobCategory,
   type JobLevel,
+  type JobLocation,
   type JobPayload,
   type JobRequirementSection,
   type RequirementSectionType,
@@ -57,6 +59,7 @@ export default function CreateJobPage() {
     description: "",
     workingTime: "",
     location: "",
+    locationCode: null,
     employmentType: "FULL_TIME",
     workMode: "HYBRID",
     level: "MIDDLE",
@@ -70,6 +73,7 @@ export default function CreateJobPage() {
     requirementSections: [defaultSection()],
   });
   const [categoryOptions, setCategoryOptions] = useState<JobCategory[]>([]);
+  const [locationOptions, setLocationOptions] = useState<JobLocation[]>([]);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
 
@@ -77,6 +81,9 @@ export default function CreateJobPage() {
     getJobCategories()
       .then(setCategoryOptions)
       .catch(() => setError("Không thể tải danh sách ngành nghề."));
+    getLocations()
+      .then(setLocationOptions)
+      .catch(() => setError("Không thể tải danh sách địa điểm."));
   }, []);
 
   const updateField = <K extends keyof JobPayload>(field: K, value: JobPayload[K]) => {
@@ -175,6 +182,10 @@ export default function CreateJobPage() {
       setError("Vui lòng chọn ít nhất một ngành nghề.");
       return;
     }
+    if (!form.locationCode) {
+      setError("Vui lòng chọn tỉnh/thành phố.");
+      return;
+    }
     setSubmitting(true);
 
     try {
@@ -249,10 +260,19 @@ export default function CreateJobPage() {
                 })}
               </div>
             </fieldset>
+            <SelectField
+              label="Tỉnh/thành phố"
+              value={form.locationCode ?? ""}
+              onChange={(value) => updateField("locationCode", value || null)}
+              options={[
+                { value: "", label: "Chọn tỉnh/thành phố" },
+                ...locationOptions.map((location) => ({ value: location.code, label: location.name })),
+              ]}
+            />
             <label className="space-y-2">
-              <span className="text-xs font-bold uppercase tracking-wider text-on-surface-variant">Địa điểm</span>
+              <span className="text-xs font-bold uppercase tracking-wider text-on-surface-variant">Địa chỉ chi tiết</span>
               <div className="relative">
-                <input value={form.location ?? ""} onChange={(event) => updateField("location", event.target.value)} className="w-full bg-surface-container-high/50 rounded-lg px-4 py-3 pr-10 outline-none focus:ring-2 focus:ring-primary/30" placeholder="TP.HCM" />
+                <input value={form.location ?? ""} onChange={(event) => updateField("location", event.target.value)} className="w-full bg-surface-container-high/50 rounded-lg px-4 py-3 pr-10 outline-none focus:ring-2 focus:ring-primary/30" placeholder="Quận 1, TP.HCM / Pleiku, Gia Lai..." />
                 <MapPin className="absolute right-3 top-1/2 -translate-y-1/2 text-on-surface-variant w-5 h-5 pointer-events-none" />
               </div>
             </label>
