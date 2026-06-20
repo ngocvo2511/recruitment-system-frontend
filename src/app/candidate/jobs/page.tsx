@@ -111,6 +111,7 @@ export default function CandidateJobsPage() {
     Boolean(selectedSalary) ||
     sort !== "RELEVANCE";
 
+
   useEffect(() => {
     getJobCategories()
       .then(setCategoryOptions)
@@ -191,9 +192,11 @@ export default function CandidateJobsPage() {
         setLoading(false);
       });
 
+
     return () => {
       active = false;
     };
+
   }, [
     searchQuery,
     selectedLocation,
@@ -206,6 +209,7 @@ export default function CandidateJobsPage() {
     limit,
     hasActiveFilters,
   ]);
+
 
   useEffect(() => {
     getSavedJobs()
@@ -507,6 +511,7 @@ export default function CandidateJobsPage() {
               Tải thêm việc làm
             </button>
           </div>
+
         </div>
       </section>
     </div>
