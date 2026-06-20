@@ -77,6 +77,13 @@ export type JobResponse = JobPayload & {
   id: string;
   companyId?: string | null;
   companyName?: string | null;
+  companyLogoUrl?: string | null;
+  companyIndustry?: string | null;
+  companySize?: number | null;
+  companyAddress?: string | null;
+  companyCity?: string | null;
+  companyCountry?: string | null;
+  companyWebsite?: string | null;
   status: JobStatus;
   createdAt?: string | null;
   updatedAt?: string | null;
@@ -98,6 +105,12 @@ export type JobSummaryResponse = {
   salaryNegotiable?: boolean | null;
   companyId?: string | null;
   companyName?: string | null;
+  companyLogoUrl?: string | null;
+  companyIndustry?: string | null;
+  companySize?: number | null;
+  companyAddress?: string | null;
+  companyCity?: string | null;
+  companyCountry?: string | null;
   status: JobStatus;
   createdAt?: string | null;
   publishedAt?: string | null;

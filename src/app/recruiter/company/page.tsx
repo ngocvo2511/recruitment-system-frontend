@@ -1,7 +1,7 @@
 "use client";
 
-import { FormEvent, useEffect, useMemo, useState } from "react";
-import { Building2, Check, ClipboardList, Loader2, MailPlus, Pencil, Save, Trash2, UserCheck, Users, X } from "lucide-react";
+import { ChangeEvent, FormEvent, useEffect, useMemo, useState } from "react";
+import { Building2, Check, ClipboardList, ImageUp, Loader2, MailPlus, Pencil, Save, Trash2, UserCheck, Users, X } from "lucide-react";
 import {
   approveCompanyMember,
   cancelCompanyInvite,
@@ -13,6 +13,8 @@ import {
   rejectCompanyMember,
   removeCompanyMember,
   updateCompany,
+  uploadCompanyLogo,
+  type CompanyRequest,
   type CompanyDashboardResponse,
   type CompanyInviteResponse,
   type CompanyMemberResponse,
@@ -69,6 +71,7 @@ function toCompanyForm(company: CompanyDashboardResponse): CompanyRequest {
     companySize: company.companySize ?? 0,
     taxCode: company.taxCode ?? "",
     businessLicense: company.businessLicense ?? "",
+    logoUrl: company.logoUrl ?? "",
   };
 }
 
@@ -87,6 +90,7 @@ export default function RecruiterCompanyPage() {
   const [inviteEmail, setInviteEmail] = useState("");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [logoUploading, setLogoUploading] = useState(false);
   const [actionId, setActionId] = useState<string | null>(null);
   const [editing, setEditing] = useState(false);
   const [error, setError] = useState("");
@@ -144,6 +148,25 @@ export default function RecruiterCompanyPage() {
       setError(err instanceof Error ? err.message : "Không thể cập nhật thông tin công ty.");
     } finally {
       setSaving(false);
+    }
+  };
+
+  const changeCompanyLogo = async (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    event.target.value = "";
+    if (!company || !file) return;
+    setLogoUploading(true);
+    setError("");
+    setNotice("");
+    try {
+      const updated = await uploadCompanyLogo(company.companyId, file);
+      setCompany(updated);
+      setForm(toCompanyForm(updated));
+      setNotice("Đã cập nhật logo công ty.");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Không thể cập nhật logo công ty.");
+    } finally {
+      setLogoUploading(false);
     }
   };
 
@@ -241,15 +264,36 @@ export default function RecruiterCompanyPage() {
   return (
     <div className="max-w-7xl mx-auto animate-fade-in-up space-y-8">
       <header className="flex flex-col lg:flex-row lg:items-end justify-between gap-6">
-        <div>
-          <p className="text-primary font-bold text-xs tracking-[0.18em] uppercase mb-3">Quản lý công ty</p>
-          <div className="flex flex-wrap items-center gap-3 mb-3">
-            <h1 className="text-4xl font-extrabold text-on-surface">{company.name}</h1>
-            <span className={`px-3 py-1 rounded-full border text-xs font-bold ${statusClass[company.status]}`}>{statusLabel[company.status]}</span>
+        <div className="flex flex-col gap-5 sm:flex-row sm:items-center">
+          <div className="relative h-24 w-24 shrink-0 rounded-3xl">
+            <div className="h-full w-full overflow-hidden rounded-3xl border border-outline-variant/20 bg-white shadow-sm">
+            {company.logoUrl ? (
+              // Company logos are user-managed external images from Cloudinary.
+              // eslint-disable-next-line @next/next/no-img-element
+              <img className="h-full w-full object-cover" src={company.logoUrl} alt={`Logo ${company.name}`} />
+            ) : (
+              <div className="flex h-full w-full items-center justify-center bg-primary/10 text-primary">
+                <Building2 className="h-10 w-10" />
+              </div>
+            )}
+            </div>
+            {isOwner && (
+              <label className="absolute -bottom-2 -right-2 flex h-9 w-9 cursor-pointer items-center justify-center rounded-full border-2 border-white bg-primary text-white shadow-lg transition-colors hover:bg-primary/90" title="Cập nhật logo công ty" aria-label="Cập nhật logo công ty">
+                {logoUploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <ImageUp className="h-4 w-4" />}
+                <input accept="image/jpeg,image/png,image/webp" className="hidden" disabled={logoUploading} onChange={changeCompanyLogo} type="file" />
+              </label>
+            )}
           </div>
-          <p className="text-on-surface-variant">
-            Vai trò hiện tại: <span className="font-semibold text-on-surface">{isOwner ? "Chủ sở hữu công ty" : "Nhà tuyển dụng"}</span>
-          </p>
+          <div>
+            <p className="text-primary font-bold text-xs tracking-[0.18em] uppercase mb-3">Quản lý công ty</p>
+            <div className="flex flex-wrap items-center gap-3 mb-3">
+              <h1 className="text-4xl font-extrabold text-on-surface">{company.name}</h1>
+              <span className={`px-3 py-1 rounded-full border text-xs font-bold ${statusClass[company.status]}`}>{statusLabel[company.status]}</span>
+            </div>
+            <p className="text-on-surface-variant">
+              Vai trò hiện tại: <span className="font-semibold text-on-surface">{isOwner ? "Chủ sở hữu công ty" : "Nhà tuyển dụng"}</span>
+            </p>
+          </div>
         </div>
         {isOwner && (
           <button

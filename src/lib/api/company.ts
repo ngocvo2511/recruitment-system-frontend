@@ -19,6 +19,7 @@ export type CompanyRequest = {
   companySize: number;
   taxCode: string;
   businessLicense: string;
+  logoUrl?: string | null;
 };
 
 export type CompanyResponse = CompanyRequest & {
@@ -102,8 +103,9 @@ function getAccessToken(): string | null {
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
   const token = getAccessToken();
   const headers = new Headers(init?.headers);
+  const isFormData = typeof FormData !== "undefined" && init?.body instanceof FormData;
 
-  if (!headers.has("Content-Type")) {
+  if (!isFormData && !headers.has("Content-Type")) {
     headers.set("Content-Type", "application/json");
   }
 
@@ -161,6 +163,15 @@ export function updateCompany(
   return request<CompanyDashboardResponse>(`/companies/${companyId}`, {
     method: "PUT",
     body: JSON.stringify(payload),
+  });
+}
+
+export function uploadCompanyLogo(companyId: string, file: File): Promise<CompanyDashboardResponse> {
+  const formData = new FormData();
+  formData.append("file", file);
+  return request<CompanyDashboardResponse>(`/companies/${companyId}/logo`, {
+    method: "PUT",
+    body: formData,
   });
 }
 

@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import {
   ArrowRight,
   Bookmark,
+  Building2,
   BriefcaseBusiness,
   CheckCircle2,
   ChevronRight,
@@ -433,9 +434,20 @@ export default function CandidateDashboardPage() {
           {recommendations.map(({ job, matchScore }) => (
             <Link key={job.id} href={`/candidate/jobs/${job.id}`} className="border border-outline-variant/20 bg-white p-5 transition-colors hover:border-primary/40">
               <div className="flex items-start justify-between gap-4">
-                <div className="min-w-0">
-                  <h3 className="truncate text-lg font-bold text-on-surface">{job.title}</h3>
-                  <p className="mt-1 truncate text-sm text-on-surface-variant">{job.companyName ?? "Công ty"}</p>
+                <div className="flex min-w-0 items-start gap-3">
+                  <div className="flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-2xl border border-outline-variant/15 bg-surface p-2">
+                    {job.companyLogoUrl ? (
+                      // Company logos are user-managed external images from Cloudinary.
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img className="h-full w-full rounded-xl object-cover" src={job.companyLogoUrl} alt={`Logo ${job.companyName ?? "công ty"}`} />
+                    ) : (
+                      <Building2 className="h-6 w-6 text-primary" />
+                    )}
+                  </div>
+                  <div className="min-w-0">
+                    <h3 className="truncate text-lg font-bold text-on-surface">{job.title}</h3>
+                    <p className="mt-1 truncate text-sm text-on-surface-variant">{job.companyName ?? "Công ty"}</p>
+                  </div>
                 </div>
                 {matchScore != null && <span className="shrink-0 rounded-full bg-secondary/10 px-3 py-1 text-xs font-black text-secondary">{Math.round(matchScore)}%</span>}
               </div>

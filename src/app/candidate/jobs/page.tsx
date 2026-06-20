@@ -71,14 +71,24 @@ function formatDate(value?: string | null): string {
   return date.toLocaleDateString("vi-VN");
 }
 
+function formatMoneyAmount(value: number, currency?: string | null): string {
+  const code = (currency ?? "VND").toUpperCase();
+  if (code === "VND") {
+    const millions = value / 1000000;
+    const text = Number.isInteger(millions) ? String(millions) : millions.toFixed(1).replace(/\.0$/, "");
+    return `${text} triệu`;
+  }
+  return `${new Intl.NumberFormat("vi-VN", { maximumFractionDigits: 0 }).format(value)} ${code}`;
+}
+
 function formatSalary(job: JobResponse): string {
   if (job.salaryNegotiable) return "Thỏa thuận";
   const min = job.minSalary ?? null;
   const max = job.maxSalary ?? null;
-  const currency = job.currency ? ` ${job.currency}` : "";
-  if (min != null && max != null) return `${min} - ${max}${currency}`;
-  if (min != null) return `Từ ${min}${currency}`;
-  if (max != null) return `Đến ${max}${currency}`;
+  const currency = job.currency ?? "VND";
+  if (min != null && max != null) return `${formatMoneyAmount(min, currency)} - ${formatMoneyAmount(max, currency)}`;
+  if (min != null) return `Từ ${formatMoneyAmount(min, currency)}`;
+  if (max != null) return `Đến ${formatMoneyAmount(max, currency)}`;
   return "--";
 }
 
@@ -446,8 +456,14 @@ export default function CandidateJobsPage() {
                 key={job.id}
                 className="group bg-surface-container-lowest p-6 rounded-3xl border border-transparent hover:border-primary/10 hover:shadow-[0_8px_32px_0_rgba(0,80,212,0.05)] transition-all flex flex-col md:flex-row gap-6 items-start md:items-center"
               >
-                <div className="w-14 h-14 bg-surface rounded-2xl flex items-center justify-center p-3 flex-shrink-0">
-                  <div className="w-full h-full bg-gradient-to-br from-indigo-500 to-purple-500 rounded-lg" />
+                <div className="flex h-24 w-24 flex-shrink-0 items-center justify-center overflow-hidden rounded-2xl border border-outline-variant/35 bg-white shadow-sm">
+                  {job.companyLogoUrl ? (
+                    // Company logos are user-managed external images from Cloudinary.
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img className="h-full w-full object-cover" src={job.companyLogoUrl} alt={`Logo ${job.companyName ?? "công ty"}`} />
+                  ) : (
+                    <Building2 className="h-12 w-12 text-primary" />
+                  )}
                 </div>
                 <div className="flex-grow">
                   <div className="flex flex-wrap items-center gap-3 mb-1">

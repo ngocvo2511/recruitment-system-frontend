@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { ArrowLeft, Bookmark, Building2, MapPin, Clock, CheckCircle2, Flag, Mic, X } from "lucide-react";
+import { ArrowLeft, Bookmark, Briefcase, Building2, CircleDollarSign, MapPin, Clock, CheckCircle2, Flag, Mic, X } from "lucide-react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import {
@@ -42,23 +42,59 @@ function formatDate(value?: string | null): string {
   return date.toLocaleDateString();
 }
 
+function formatMoneyAmount(value: number, currency?: string | null): string {
+  const code = (currency ?? "VND").toUpperCase();
+  if (code === "VND") {
+    const millions = value / 1000000;
+    const text = Number.isInteger(millions) ? String(millions) : millions.toFixed(1).replace(/\.0$/, "");
+    return `${text} triệu`;
+  }
+  return `${new Intl.NumberFormat("vi-VN", { maximumFractionDigits: 0 }).format(value)} ${code}`;
+}
+
 function formatSalary(job: JobResponse): string {
   if (job.salaryNegotiable) {
     return "Thỏa thuận";
   }
   const min = job.minSalary ?? null;
   const max = job.maxSalary ?? null;
-  const currency = job.currency ? ` ${job.currency}` : "";
+  const currency = job.currency ?? "VND";
   if (min != null && max != null) {
-    return `${min} - ${max}${currency}`;
+    return `${formatMoneyAmount(min, currency)} - ${formatMoneyAmount(max, currency)}`;
   }
   if (min != null) {
-    return `Từ ${min}${currency}`;
+    return `Từ ${formatMoneyAmount(min, currency)}`;
   }
   if (max != null) {
-    return `Đến ${max}${currency}`;
+    return `Đến ${formatMoneyAmount(max, currency)}`;
   }
   return "--";
+}
+
+const employmentTypeLabel: Record<string, string> = {
+  FULL_TIME: "Toàn thời gian",
+  PART_TIME: "Bán thời gian",
+  CONTRACT: "Hợp đồng",
+  INTERNSHIP: "Thực tập",
+};
+
+const workModeLabel: Record<string, string> = {
+  ONSITE: "Tại văn phòng",
+  REMOTE: "Từ xa",
+  HYBRID: "Kết hợp",
+};
+
+const levelLabel: Record<string, string> = {
+  INTERN: "Thực tập",
+  FRESHER: "Fresher",
+  JUNIOR: "Junior",
+  MIDDLE: "Middle",
+  SENIOR: "Senior",
+  LEAD: "Lead",
+};
+
+function getLabel(map: Record<string, string>, value?: string | null): string {
+  return value ? map[value] ?? value : "--";
 }
 
 function parseJsonList(value?: string | null): string[] {
@@ -442,21 +478,40 @@ export default function JobDetailPage() {
   }
 
   return (
-    <div className="max-w-4xl mx-auto px-6 py-6 w-full">
+    <div className="mx-auto w-full max-w-7xl px-6 py-6">
       <Link href="/candidate/jobs" className="inline-flex items-center gap-2 text-on-surface-variant hover:text-primary font-medium mb-8 group">
         <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform"/>
         Quay lại danh sách việc làm
       </Link>
 
-      <div className="glass-card rounded-[2rem] p-8 md:p-12 shadow-lg relative overflow-hidden">
+      <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_360px] lg:items-start">
+      <div className="glass-card rounded-[2rem] p-8 md:p-10 shadow-lg relative overflow-hidden">
         {/* Abstract Backgrounds */}
         <div className="absolute top-0 right-0 w-64 h-64 bg-primary/10 rounded-full blur-[80px] -z-10 pointer-events-none"></div>
 
         {/* Header */}
-        <div className="flex flex-col md:flex-row gap-6 items-start md:items-center justify-between mb-10 pb-10 border-b border-outline-variant/10">
-          <div className="flex items-center gap-6">
-            <div className="w-20 h-20 bg-surface rounded-2xl flex items-center justify-center p-4 shrink-0 shadow-sm">
-              <div className="w-full h-full bg-gradient-to-br from-indigo-500 to-purple-500 rounded-lg"></div>
+        <div className="relative mb-5 border-b border-outline-variant/10 pb-5 pr-12">
+          <button
+            type="button"
+            onClick={() => {
+              setReportError(null);
+              setShowReportForm(true);
+            }}
+            className="absolute right-0 top-0 inline-flex h-10 w-10 items-center justify-center rounded-full border border-outline-variant/25 bg-white text-on-surface-variant transition hover:border-error/30 hover:bg-error/10 hover:text-error"
+            title="Báo cáo tin tuyển dụng"
+            aria-label="Báo cáo tin tuyển dụng"
+          >
+            <Flag className="h-4 w-4" />
+          </button>
+          <div className="flex flex-col gap-5 sm:flex-row sm:items-start">
+            <div className="flex h-20 w-20 shrink-0 items-center justify-center overflow-hidden rounded-2xl border border-outline-variant/15 bg-white shadow-sm">
+              {job.companyLogoUrl ? (
+                // Company logos are user-managed external images from Cloudinary.
+                // eslint-disable-next-line @next/next/no-img-element
+                <img className="h-full w-full object-cover" src={job.companyLogoUrl} alt={`Logo ${job.companyName ?? "công ty"}`} />
+              ) : (
+                <Building2 className="h-9 w-9 text-primary" />
+              )}
             </div>
             <div>
               <h1 className="text-3xl font-extrabold text-on-surface mb-2">{job.title}</h1>
@@ -466,7 +521,7 @@ export default function JobDetailPage() {
                 <span className="flex items-center gap-1"><Clock className="w-4 h-4"/> Đăng: {formatDate(job.publishedAt ?? job.createdAt)}</span>
               </div>
               {job.categories.length > 0 && (
-                <div className="mt-3 flex flex-wrap gap-2">
+                <div className="mt-2 flex flex-wrap gap-2">
                   {job.categories.map((category) => (
                     <span
                       key={category.code}
@@ -479,52 +534,60 @@ export default function JobDetailPage() {
               )}
             </div>
           </div>
-          <div className="flex md:flex-col items-center md:items-end gap-3 w-full md:w-auto">
-            <div className="text-2xl font-black text-primary">{formatSalary(job)}</div>
-            <button
-              type="button"
-              onClick={() => void toggleSaved()}
-              disabled={updatingSaved}
-              className={`inline-flex w-full items-center justify-center gap-2 rounded-full border px-6 py-3 font-bold transition md:w-auto ${
-                saved
-                  ? "border-primary bg-primary text-white"
-                  : "border-outline-variant/30 bg-surface text-on-surface-variant hover:text-primary"
-              } disabled:opacity-50`}
-            >
-              <Bookmark className={`h-4 w-4 ${saved ? "fill-current" : ""}`} />
-              {saved ? "Đã lưu" : "Lưu công việc"}
-            </button>
-            <button
-              type="button"
-              onClick={() => {
-                setReportError(null);
-                setShowReportForm(true);
-              }}
-              className="inline-flex w-full items-center justify-center gap-2 rounded-full px-5 py-2 text-sm font-semibold text-error hover:bg-error/10 md:w-auto"
-            >
-              <Flag className="h-4 w-4" />
-              Báo cáo tin
-            </button>
-            <Link
-              href={`/candidate/jobs/${job.id}/mock-interview/setup`}
-              className="inline-flex w-full items-center justify-center gap-2 rounded-full border border-primary/30 bg-primary/10 px-6 py-3 font-bold text-primary transition hover:bg-primary/15 md:w-auto"
-            >
-              <Mic className="h-4 w-4" />
-              Luyện phỏng vấn với AI
-            </Link>
-            <button
-              type="button"
-              onClick={() => {
-                setApplyError(null);
-                setApplySuccess(null);
-                setShowApplyForm((visible) => !visible);
-              }}
-              disabled={Boolean(currentApplication)}
-              className="signature-gradient text-white px-8 py-3 rounded-full font-bold shadow-lg hover:scale-105 active:scale-95 transition-all w-full md:w-auto disabled:opacity-60 disabled:hover:scale-100"
-            >
-              {currentApplication ? "Đã ứng tuyển" : "Ứng tuyển ngay"}
-            </button>
+        </div>
+
+        <div className="mb-5 grid gap-6 rounded-3xl border border-outline-variant/20 bg-white px-6 py-5 shadow-sm md:grid-cols-3">
+          <div className="flex items-center gap-4">
+            <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-emerald-500 text-white">
+              <CircleDollarSign className="h-5 w-5" />
+            </span>
+            <div>
+              <p className="text-sm font-semibold text-on-surface-variant">Mức lương</p>
+              <p className="mt-1 text-base font-black text-on-surface">{formatSalary(job)}</p>
+            </div>
           </div>
+          <div className="flex items-center gap-4">
+            <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-emerald-500 text-white">
+              <MapPin className="h-5 w-5" />
+            </span>
+            <div>
+              <p className="text-sm font-semibold text-on-surface-variant">Địa điểm</p>
+              <p className="mt-1 text-base font-black text-on-surface">{job.locationName ?? job.location ?? "--"}</p>
+            </div>
+          </div>
+          <div className="flex items-center gap-4">
+            <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-emerald-500 text-white">
+              <Briefcase className="h-5 w-5" />
+            </span>
+            <div>
+              <p className="text-sm font-semibold text-on-surface-variant">Cấp bậc</p>
+              <p className="mt-1 text-base font-black text-on-surface">{getLabel(levelLabel, job.level)}</p>
+            </div>
+          </div>
+        </div>
+
+        <div className="mb-8 grid gap-3 rounded-3xl border border-outline-variant/20 bg-white/80 p-5 shadow-sm sm:grid-cols-[minmax(0,1fr)_220px]">
+          <button
+            type="button"
+            onClick={() => {
+              setApplyError(null);
+              setApplySuccess(null);
+              setShowApplyForm((visible) => !visible);
+            }}
+            disabled={Boolean(currentApplication)}
+            className="signature-gradient inline-flex h-12 items-center justify-center rounded-2xl px-5 text-sm font-black text-white shadow-lg transition hover:scale-[1.01] active:scale-95 disabled:opacity-60 disabled:hover:scale-100"
+          >
+            {currentApplication ? "Đã ứng tuyển" : "Ứng tuyển ngay"}
+          </button>
+          <button
+            type="button"
+            onClick={() => void toggleSaved()}
+            disabled={updatingSaved}
+            className="inline-flex h-12 items-center justify-center gap-2 rounded-2xl border border-outline-variant/30 bg-white text-sm font-bold text-on-surface-variant transition hover:border-primary/30 hover:text-primary disabled:opacity-50"
+          >
+            <Bookmark className={`h-4 w-4 ${saved ? "fill-primary text-primary" : ""}`} />
+            {saved ? "Đã lưu" : "Lưu công việc"}
+          </button>
         </div>
 
         {reportMessage && (
@@ -671,6 +734,13 @@ export default function JobDetailPage() {
                   Chưa có đánh giá độ phù hợp. Vui lòng cập nhật CV để AI có thể phân tích.
                 </div>
               )}
+              <Link
+                href={`/candidate/jobs/${job.id}/mock-interview/setup`}
+                className="inline-flex items-center justify-center gap-2 rounded-2xl border border-primary/25 bg-primary/8 px-5 py-2.5 text-sm font-bold text-primary transition hover:bg-primary/12"
+              >
+                <Mic className="h-4 w-4" />
+                Luyện phỏng vấn với AI
+              </Link>
             </div>
           </div>
         </div>
@@ -807,6 +877,84 @@ export default function JobDetailPage() {
             </div>
           </section>
         </div>
+      </div>
+
+      <aside className="space-y-5 lg:sticky lg:top-24">
+        <section className="rounded-3xl border border-outline-variant/20 bg-white p-6 shadow-sm">
+          <h2 className="text-lg font-black text-on-surface">Thông tin công ty</h2>
+          <div className="mt-5 flex items-center gap-4">
+            <div className="flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-2xl border border-outline-variant/30 bg-white shadow-sm">
+              {job.companyLogoUrl ? (
+                // Company logos are user-managed external images from Cloudinary.
+                // eslint-disable-next-line @next/next/no-img-element
+                <img className="h-full w-full object-cover" src={job.companyLogoUrl} alt={`Logo ${job.companyName ?? "công ty"}`} />
+              ) : (
+                <Building2 className="h-8 w-8 text-primary" />
+              )}
+            </div>
+            <div className="min-w-0">
+              <p className="truncate text-base font-black text-on-surface">{job.companyName ?? "Công ty"}</p>
+              <p className="mt-1 text-sm text-on-surface-variant">{job.companyIndustry ?? "Chưa cập nhật lĩnh vực"}</p>
+            </div>
+          </div>
+          <div className="mt-5 space-y-3 text-sm">
+            <div className="flex items-start justify-between gap-4 border-t border-outline-variant/15 pt-3">
+              <span className="text-on-surface-variant">Lĩnh vực</span>
+              <span className="text-right font-bold text-on-surface">{job.companyIndustry ?? "--"}</span>
+            </div>
+            <div className="flex items-start justify-between gap-4 border-t border-outline-variant/15 pt-3">
+              <span className="text-on-surface-variant">Quy mô</span>
+              <span className="text-right font-bold text-on-surface">{job.companySize ? `${job.companySize} nhân sự` : "--"}</span>
+            </div>
+            <div className="flex items-start justify-between gap-4 border-t border-outline-variant/15 pt-3">
+              <span className="text-on-surface-variant">Địa điểm</span>
+              <span className="text-right font-bold text-on-surface">
+                {[job.companyAddress, job.companyCity, job.companyCountry].filter(Boolean).join(", ") || "--"}
+              </span>
+            </div>
+            <div className="flex items-start justify-between gap-4 border-t border-outline-variant/15 pt-3">
+              <span className="text-on-surface-variant">Website</span>
+              {job.companyWebsite ? (
+                <a className="max-w-[190px] truncate text-right font-bold text-primary hover:underline" href={job.companyWebsite} target="_blank" rel="noreferrer">
+                  {job.companyWebsite}
+                </a>
+              ) : (
+                <span className="text-right font-bold text-on-surface">--</span>
+              )}
+            </div>
+          </div>
+        </section>
+
+        <section className="rounded-3xl border border-outline-variant/20 bg-white p-6 shadow-sm">
+          <h2 className="text-lg font-black text-on-surface">Thông tin chung</h2>
+          <div className="mt-5 space-y-3 text-sm">
+            <div className="flex items-start justify-between gap-4 border-t border-outline-variant/15 pt-3">
+              <span className="text-on-surface-variant">Loại hình</span>
+              <span className="text-right font-bold text-on-surface">{getLabel(employmentTypeLabel, job.employmentType)}</span>
+            </div>
+            <div className="flex items-start justify-between gap-4 border-t border-outline-variant/15 pt-3">
+              <span className="text-on-surface-variant">Hình thức</span>
+              <span className="text-right font-bold text-on-surface">{getLabel(workModeLabel, job.workMode)}</span>
+            </div>
+            <div className="flex items-start justify-between gap-4 border-t border-outline-variant/15 pt-3">
+              <span className="text-on-surface-variant">Cấp bậc</span>
+              <span className="text-right font-bold text-on-surface">{getLabel(levelLabel, job.level)}</span>
+            </div>
+            <div className="flex items-start justify-between gap-4 border-t border-outline-variant/15 pt-3">
+              <span className="text-on-surface-variant">Số lượng tuyển</span>
+              <span className="text-right font-bold text-on-surface">{job.headcount ?? "--"}</span>
+            </div>
+            <div className="flex items-start justify-between gap-4 border-t border-outline-variant/15 pt-3">
+              <span className="text-on-surface-variant">Thời gian làm việc</span>
+              <span className="text-right font-bold text-on-surface">{job.workingTime || "--"}</span>
+            </div>
+            <div className="flex items-start justify-between gap-4 border-t border-outline-variant/15 pt-3">
+              <span className="text-on-surface-variant">Hạn nộp</span>
+              <span className="text-right font-bold text-on-surface">{formatDate(job.deadline)}</span>
+            </div>
+          </div>
+        </section>
+      </aside>
       </div>
 
       {showReportForm && (
