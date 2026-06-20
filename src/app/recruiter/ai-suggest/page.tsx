@@ -3,11 +3,14 @@
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { Sparkles, MapPin, ArrowRight, Bookmark, RefreshCw, Star, Loader2, ChevronDown, CheckCircle2, Search } from "lucide-react";
-import { getJobs, JobResponse, getJobMatches, CvRecommendationResponse } from "@/lib/api/jobs";
+import { getJobs, JobResponse, getJobMatches, CvRecommendationResponse, JobSummaryResponse } from "@/lib/api/jobs";
+import { getRecruiterJobApplications } from "@/lib/api/applications";
 
 export default function AISuggestionsPage() {
-  const [jobs, setJobs] = useState<JobResponse[]>([]);
-  const [selectedJob, setSelectedJob] = useState<JobResponse | null>(null);
+  const [jobs, setJobs] = useState<JobSummaryResponse[]>([]);
+  const [appliedCandidateIds, setAppliedCandidateIds] = useState<Set<string>>(new Set());
+  const [rejectedCandidateIds, setRejectedCandidateIds] = useState<Set<string>>(new Set());
+  const [selectedJob, setSelectedJob] = useState<JobSummaryResponse | null>(null);
   const [matches, setMatches] = useState<CvRecommendationResponse[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isSyncing, setIsSyncing] = useState(false);
@@ -15,10 +18,11 @@ export default function AISuggestionsPage() {
 
   const fetchJobs = useCallback(async () => {
     try {
-      const data = await getJobs();
-      setJobs(data);
-      if (data.length > 0) {
-        setSelectedJob(data[0]);
+      const pageData = await getJobs();
+      const activeJobs = (pageData.content || []).filter(job => job.status !== "CLOSED");
+      setJobs(activeJobs);
+      if (activeJobs.length > 0) {
+        setSelectedJob(activeJobs[0]);
       }
     } catch (error) {
       console.error("Failed to fetch jobs:", error);
@@ -40,6 +44,18 @@ export default function AISuggestionsPage() {
     }
   }, []);
 
+  const fetchApplications = useCallback(async (jobId: string) => {
+    try {
+      const apps = await getRecruiterJobApplications(jobId);
+      setAppliedCandidateIds(new Set(apps.map((a) => a.candidateId)));
+      setRejectedCandidateIds(new Set(apps.filter((a) => a.status === "REJECTED" || a.status === "WITHDRAWN").map((a) => a.candidateId)));
+    } catch (error) {
+      console.error("Failed to fetch applications:", error);
+      setAppliedCandidateIds(new Set());
+      setRejectedCandidateIds(new Set());
+    }
+  }, []);
+
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
     fetchJobs();
@@ -49,12 +65,14 @@ export default function AISuggestionsPage() {
     if (selectedJob) {
       // eslint-disable-next-line react-hooks/set-state-in-effect
       fetchMatches(selectedJob.id);
+      fetchApplications(selectedJob.id);
     }
-  }, [fetchMatches, selectedJob]);
+  }, [fetchMatches, fetchApplications, selectedJob]);
 
   const handleSync = () => {
     if (selectedJob) {
       fetchMatches(selectedJob.id);
+      fetchApplications(selectedJob.id);
     }
   };
 
@@ -67,9 +85,11 @@ export default function AISuggestionsPage() {
     );
   }
 
-  const topMatch = matches.length > 0 ? matches[0] : null;
-  const secondaryMatch = matches.length > 1 ? matches[1] : null;
-  const otherMatches = matches.slice(2);
+  const validMatches = matches.filter((m) => !m.candidateId || !rejectedCandidateIds.has(m.candidateId));
+
+  const topMatch = validMatches.length > 0 ? validMatches[0] : null;
+  const secondaryMatch = validMatches.length > 1 ? validMatches[1] : null;
+  const otherMatches = validMatches.slice(2);
 
   return (
     <div className="max-w-7xl mx-auto animate-fade-in-up">
@@ -147,7 +167,7 @@ export default function AISuggestionsPage() {
           <p className="mt-6 text-xl font-bold text-on-surface">Đang tìm ứng viên phù hợp...</p>
           <p className="text-on-surface-variant">AI đang phân tích CV và so khớp với yêu cầu tuyển dụng.</p>
         </div>
-      ) : matches.length === 0 ? (
+      ) : validMatches.length === 0 ? (
         <div className="glass-card rounded-[2rem] p-12 text-center border border-white/40 shadow-sm">
           <div className="w-20 h-20 bg-surface-container-high rounded-full flex items-center justify-center mx-auto mb-6">
             <Search className="w-10 h-10 text-on-surface-variant opacity-50" />
@@ -208,14 +228,27 @@ export default function AISuggestionsPage() {
                       {/* We don't have skills directly in CvRecommendationResponse yet, so we show generic badges or hide them */}
                       <span className="px-4 py-2 rounded-full bg-surface-container-high text-on-surface text-xs font-bold uppercase tracking-widest">Rất phù hợp</span>
                       <span className="px-4 py-2 rounded-full bg-surface-container-high text-on-surface text-xs font-bold uppercase tracking-widest">AI đề xuất</span>
+                      {topMatch.candidateId && appliedCandidateIds.has(topMatch.candidateId) && (
+                        <span className="px-4 py-2 rounded-full bg-green-100 text-green-700 border border-green-200 text-xs font-bold uppercase tracking-widest flex items-center gap-1">
+                          <CheckCircle2 className="w-3 h-3" />
+                          Đã ứng tuyển
+                        </span>
+                      )}
                     </div>
                     
                     <div className="flex gap-4">
                       {topMatch.candidateId ? (
-                        <Link href={`/recruiter/candidates/${topMatch.candidateId}?cvId=${topMatch.cv.id}`} className="flex-1 py-4 rounded-2xl signature-gradient text-white font-bold hover:opacity-90 transition-all flex items-center justify-center gap-2 shadow-lg shadow-primary/20">
-                          Xem hồ sơ
-                          <ArrowRight className="w-5 h-5" />
-                        </Link>
+                        appliedCandidateIds.has(topMatch.candidateId) ? (
+                          <Link href={`/recruiter/candidates/${topMatch.candidateId}?cvId=${topMatch.cv.id}`} className="flex-1 py-4 rounded-2xl bg-green-600 text-white font-bold hover:bg-green-700 transition-all flex items-center justify-center gap-2 shadow-lg shadow-green-600/20">
+                            Xem đơn ứng tuyển
+                            <ArrowRight className="w-5 h-5" />
+                          </Link>
+                        ) : (
+                          <Link href={`/recruiter/ai-suggest/candidates/${topMatch.candidateId}?cvId=${topMatch.cv.id}&jobId=${selectedJob?.id}`} className="flex-1 py-4 rounded-2xl signature-gradient text-white font-bold hover:opacity-90 transition-all flex items-center justify-center gap-2 shadow-lg shadow-primary/20">
+                            Xem hồ sơ
+                            <ArrowRight className="w-5 h-5" />
+                          </Link>
+                        )
                       ) : (
                         <button className="flex-1 py-4 rounded-2xl bg-surface-container-high text-on-surface-variant font-bold cursor-not-allowed flex items-center justify-center gap-2">
                           Chưa có hồ sơ
@@ -272,13 +305,24 @@ export default function AISuggestionsPage() {
                   <div>
                     <h5 className="text-lg font-black text-on-surface leading-tight mb-1 line-clamp-1">{secondaryMatch.candidateName || secondaryMatch.cv.cvName}</h5>
                     <p className="text-xs text-on-surface-variant font-bold uppercase tracking-wider line-clamp-1">{secondaryMatch.candidateHeadline || "Sẵn sàng tìm việc"}</p>
+                    {secondaryMatch.candidateId && appliedCandidateIds.has(secondaryMatch.candidateId) && (
+                      <span className="inline-flex mt-2 px-2 py-0.5 rounded bg-green-100 text-green-700 border border-green-200 text-[10px] font-bold uppercase tracking-widest items-center gap-1">
+                        <CheckCircle2 className="w-3 h-3" /> Đã ứng tuyển
+                      </span>
+                    )}
                   </div>
                 </div>
                 <p className="text-sm text-on-surface-variant mb-6 line-clamp-2">Ứng viên có mức độ phù hợp tốt với các yêu cầu cốt lõi của vị trí.</p>
                 {secondaryMatch.candidateId ? (
-                  <Link href={`/recruiter/candidates/${secondaryMatch.candidateId}?cvId=${secondaryMatch.cv.id}`} className="w-full py-3 rounded-xl bg-surface-container-high text-on-surface font-bold text-sm hover:bg-primary hover:text-white transition-all block text-center">
-                    Xem chi tiết
-                  </Link>
+                  appliedCandidateIds.has(secondaryMatch.candidateId) ? (
+                    <Link href={`/recruiter/candidates/${secondaryMatch.candidateId}?cvId=${secondaryMatch.cv.id}`} className="w-full py-3 rounded-xl bg-green-50 text-green-700 border border-green-200 font-bold text-sm hover:bg-green-600 hover:text-white transition-all block text-center">
+                      Xem đơn ứng tuyển
+                    </Link>
+                  ) : (
+                    <Link href={`/recruiter/ai-suggest/candidates/${secondaryMatch.candidateId}?cvId=${secondaryMatch.cv.id}&jobId=${selectedJob?.id}`} className="w-full py-3 rounded-xl bg-surface-container-high text-on-surface font-bold text-sm hover:bg-primary hover:text-white transition-all block text-center">
+                      Xem chi tiết
+                    </Link>
+                  )
                 ) : (
                   <button className="w-full py-3 rounded-xl bg-surface-container-low text-on-surface-variant font-bold text-sm cursor-not-allowed">
                     Chưa có hồ sơ
@@ -307,14 +351,27 @@ export default function AISuggestionsPage() {
                     </div>
                   </div>
                   <h5 className="text-xl font-black text-on-surface mb-1 line-clamp-1 relative z-10">{match.candidateName || match.cv.cvName}</h5>
-                  <p className="text-xs text-secondary font-bold uppercase tracking-widest mb-4 line-clamp-1 relative z-10">{match.candidateHeadline || "Ứng viên tiềm năng"}</p>
+                  <p className="text-xs text-secondary font-bold uppercase tracking-widest mb-2 line-clamp-1 relative z-10">{match.candidateHeadline || "Ứng viên tiềm năng"}</p>
+                  {match.candidateId && appliedCandidateIds.has(match.candidateId) && (
+                    <div className="mb-4 relative z-10">
+                      <span className="inline-flex px-2 py-0.5 rounded bg-green-100 text-green-700 border border-green-200 text-[10px] font-bold uppercase tracking-widest items-center gap-1">
+                        <CheckCircle2 className="w-3 h-3" /> Đã ứng tuyển
+                      </span>
+                    </div>
+                  )}
                   <div className="p-4 bg-surface-container-low rounded-xl mb-6 min-h-[80px] relative z-10">
                     <p className="text-sm text-on-surface-variant leading-relaxed line-clamp-2">Phù hợp với các yêu cầu kỹ thuật được nêu trong mô tả công việc.</p>
                   </div>
                   {match.candidateId ? (
-                    <Link href={`/recruiter/candidates/${match.candidateId}?cvId=${match.cv.id}`} className="w-full py-3 rounded-xl border-2 border-primary/10 text-primary font-bold text-sm group-hover:bg-primary group-hover:text-white transition-all block text-center relative z-10">
-                      Xem hồ sơ
-                    </Link>
+                    appliedCandidateIds.has(match.candidateId) ? (
+                      <Link href={`/recruiter/candidates/${match.candidateId}?cvId=${match.cv.id}`} className="w-full py-3 rounded-xl border-2 border-green-200 text-green-700 bg-green-50 font-bold text-sm hover:bg-green-600 hover:text-white hover:border-green-600 transition-all block text-center relative z-10">
+                        Xem đơn
+                      </Link>
+                    ) : (
+                      <Link href={`/recruiter/ai-suggest/candidates/${match.candidateId}?cvId=${match.cv.id}&jobId=${selectedJob?.id}`} className="w-full py-3 rounded-xl border-2 border-primary/10 text-primary font-bold text-sm group-hover:bg-primary group-hover:text-white transition-all block text-center relative z-10">
+                        Xem hồ sơ
+                      </Link>
+                    )
                   ) : (
                     <button className="w-full py-3 rounded-xl border-2 border-outline-variant text-on-surface-variant font-bold text-sm cursor-not-allowed">
                       Chưa khả dụng

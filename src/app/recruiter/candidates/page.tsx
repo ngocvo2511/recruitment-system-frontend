@@ -223,7 +223,6 @@ export default function CandidateDatabasePage() {
                             <div className="flex items-center gap-2">
                               <span className="px-2 py-0.5 bg-primary/10 text-primary text-[9px] font-black uppercase rounded-sm border border-primary/20">AI Match</span>
                               <span className="text-sm font-black text-secondary">{matchScore}%</span>
-                              <span className="text-[10px] text-on-surface-variant">(lúc nộp đơn)</span>
                             </div>
                             <div className="w-20 h-1.5 bg-surface-container-highest rounded-full overflow-hidden">
                               <div className="h-full signature-gradient" style={{ width: `${matchScore}%` }} />
@@ -233,12 +232,20 @@ export default function CandidateDatabasePage() {
                       </td>
                       <td className="px-6 py-5 text-sm text-on-surface-variant">{formatDate(latest.appliedAt)}</td>
                       <td className="px-6 py-5 text-right">
-                        <Link
-                          href="/recruiter/pipeline"
-                          className="inline-block px-5 py-2 bg-surface-variant/30 text-on-surface hover:bg-primary hover:text-white rounded-full text-xs font-bold transition-all shadow-sm"
-                        >
-                          Xem pipeline
-                        </Link>
+                        <div className="flex items-center justify-end gap-2">
+                          <Link
+                            href={`/recruiter/candidates/${candidate.candidateId}?cvId=${latest.cvId}&appId=${latest.id}`}
+                            className="inline-flex items-center justify-center whitespace-nowrap px-4 py-2 bg-primary/10 text-primary hover:bg-primary hover:text-white rounded-full text-xs font-bold transition-all shadow-sm"
+                          >
+                            Xem hồ sơ
+                          </Link>
+                          <Link
+                            href="/recruiter/pipeline"
+                            className="inline-flex items-center justify-center whitespace-nowrap px-4 py-2 bg-surface-variant/30 text-on-surface hover:bg-surface-container-highest transition-all rounded-full text-xs font-bold shadow-sm"
+                          >
+                            Pipeline
+                          </Link>
+                        </div>
                       </td>
                     </tr>
                   );
