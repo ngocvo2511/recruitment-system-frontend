@@ -27,8 +27,14 @@ export type WorkMode = "ONSITE" | "REMOTE" | "HYBRID";
 export type JobLevel = "INTERN" | "FRESHER" | "JUNIOR" | "MIDDLE" | "SENIOR" | "LEAD";
 export type JobStatus = "DRAFT" | "PENDING" | "PUBLISHED" | "REJECTED" | "FLAGGED" | "CLOSED";
 export type RequirementSectionType = "REQUIRED" | "PREFERRED" | "OTHER";
+export type JobSearchSort = "RELEVANCE" | "NEWEST" | "OLDEST" | "SALARY_DESC";
 
 export type JobCategory = {
+  code: string;
+  name: string;
+};
+
+export type JobLocation = {
   code: string;
   name: string;
 };
@@ -52,6 +58,8 @@ export type JobPayload = {
   description: string;
   workingTime?: string;
   location?: string;
+  locationCode?: string | null;
+  locationName?: string | null;
   employmentType?: EmploymentType;
   workMode?: WorkMode;
   level?: JobLevel;
@@ -229,6 +237,10 @@ export function getJobCategories(): Promise<JobCategory[]> {
   return request<JobCategory[]>("/api/job-categories");
 }
 
+export function getLocations(): Promise<JobLocation[]> {
+  return request<JobLocation[]>("/api/locations");
+}
+
 export function getJobRecommendations(
   topK = 10,
   cvId?: string,
@@ -250,11 +262,23 @@ export type JobFtsSearchResponse = {
   rank?: number | null;
 };
 
+export type JobSearchFilters = {
+  categoryCode?: string;
+  locations?: string[];
+  employmentTypes?: EmploymentType[];
+  workModes?: WorkMode[];
+  levels?: JobLevel[];
+  salaryMin?: number;
+  salaryMax?: number;
+  salaryNegotiable?: boolean;
+  sort?: JobSearchSort;
+};
+
 export function searchJobsFts(
   query: string,
   limit = 10,
   status?: string,
-  categoryCode?: string,
+  filters: JobSearchFilters = {},
 ): Promise<JobFtsSearchResponse[]> {
   const params = new URLSearchParams();
   params.set("q", query);
@@ -262,8 +286,24 @@ export function searchJobsFts(
   if (status) {
     params.set("status", status);
   }
-  if (categoryCode) {
-    params.set("categoryCode", categoryCode);
+  if (filters.categoryCode) {
+    params.set("categoryCode", filters.categoryCode);
+  }
+  filters.locations?.forEach((location) => params.append("locations", location));
+  filters.employmentTypes?.forEach((type) => params.append("employmentTypes", type));
+  filters.workModes?.forEach((mode) => params.append("workModes", mode));
+  filters.levels?.forEach((level) => params.append("levels", level));
+  if (filters.salaryMin != null) {
+    params.set("salaryMin", String(filters.salaryMin));
+  }
+  if (filters.salaryMax != null) {
+    params.set("salaryMax", String(filters.salaryMax));
+  }
+  if (filters.salaryNegotiable != null) {
+    params.set("salaryNegotiable", String(filters.salaryNegotiable));
+  }
+  if (filters.sort) {
+    params.set("sort", filters.sort);
   }
   return request<JobFtsSearchResponse[]>(`/api/search/fts/jobs?${params.toString()}`);
 }
