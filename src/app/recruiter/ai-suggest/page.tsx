@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { Sparkles, MapPin, ArrowRight, Bookmark, RefreshCw, Star, Loader2, ChevronDown, CheckCircle2, Search } from "lucide-react";
-import { getJobs, JobResponse, getJobMatches, CvRecommendationResponse, JobSummaryResponse } from "@/lib/api/jobs";
+import { getJobs, getJobMatches, CvRecommendationResponse, JobSummaryResponse } from "@/lib/api/jobs";
 import { getRecruiterJobApplications } from "@/lib/api/applications";
 
 export default function AISuggestionsPage() {
@@ -92,26 +92,29 @@ export default function AISuggestionsPage() {
   const otherMatches = validMatches.slice(2);
 
   return (
-    <div className="max-w-7xl mx-auto animate-fade-in-up">
+    <div className="max-w-7xl mx-auto">
       {/* Page Header */}
       <div className="mb-12 relative z-20">
         <div className="absolute -top-12 -right-8 w-64 h-64 signature-gradient opacity-5 rounded-full blur-[100px]"></div>
-        <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 relative z-10">
-          <div>
+        <div className="grid gap-6 relative z-10 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-end">
+          <div className="min-w-0">
             <span className="text-primary font-bold text-xs tracking-[0.2em] uppercase mb-3 block">Gợi ý ứng viên bằng AI</span>
             
             {/* Job Selector */}
             <div className="relative mb-4">
               <button 
                 onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-                className="flex items-center gap-3 text-4xl md:text-5xl font-black text-on-surface tracking-tighter hover:text-primary transition-colors text-left"
+                className="inline-flex max-w-full items-center gap-3 text-3xl font-black text-on-surface hover:text-primary transition-colors text-left md:text-4xl"
               >
-                Ứng viên phù hợp cho <span className="underline decoration-primary/30 decoration-4 underline-offset-8">{selectedJob?.title || "Chọn tin tuyển dụng"}</span>
-                <ChevronDown className={`w-8 h-8 transition-transform ${isDropdownOpen ? "rotate-180" : ""}`} />
+                <span className="shrink-0 whitespace-nowrap">Ứng viên phù hợp cho</span>
+                <span className="min-w-0 max-w-[min(520px,46vw)] truncate underline decoration-primary/30 decoration-4 underline-offset-8">
+                  {selectedJob?.title || "Chọn tin tuyển dụng"}
+                </span>
+                <ChevronDown className={`h-7 w-7 shrink-0 transition-transform ${isDropdownOpen ? "rotate-180" : ""}`} />
               </button>
               
               {isDropdownOpen && (
-                <div className="absolute top-full left-0 mt-4 w-full md:w-[600px] bg-surface rounded-2xl shadow-2xl border border-outline-variant overflow-hidden z-50 animate-fade-in-up">
+                <div className="absolute top-full left-0 mt-4 w-full md:w-[600px] bg-surface rounded-2xl shadow-2xl border border-outline-variant overflow-hidden z-50">
                   <div className="max-h-[300px] overflow-y-auto p-2">
                     {jobs.length === 0 ? (
                       <p className="p-4 text-center text-on-surface-variant">Chưa có tin tuyển dụng đang hoạt động.</p>
@@ -142,14 +145,14 @@ export default function AISuggestionsPage() {
             
             <p className="text-on-surface-variant text-lg max-w-2xl leading-relaxed">AI phân tích CV dựa trên mô tả công việc, yêu cầu kỹ năng, mức độ phù hợp ngữ nghĩa và tín hiệu từ hồ sơ ứng viên.</p>
           </div>
-          <div className="flex gap-3">
-            <Link href="/recruiter/jobs" className="px-6 py-3 rounded-full border border-outline-variant text-on-surface-variant font-medium hover:bg-surface-container-low transition-all">
+          <div className="flex flex-wrap gap-3 lg:flex-nowrap lg:justify-end">
+            <Link href="/recruiter/jobs" className="inline-flex h-12 items-center justify-center whitespace-nowrap rounded-full border border-outline-variant px-5 text-sm font-bold text-on-surface-variant transition-all hover:bg-surface-container-low">
               Quản lý tin tuyển dụng
             </Link>
             <button 
               onClick={handleSync}
               disabled={isSyncing || !selectedJob}
-              className="px-6 py-3 rounded-full bg-secondary text-white font-bold shadow-xl shadow-secondary/20 flex items-center gap-2 hover:scale-105 transition-all disabled:opacity-50 disabled:hover:scale-100"
+              className="inline-flex h-12 items-center justify-center gap-2 whitespace-nowrap rounded-full bg-secondary px-5 text-sm font-bold text-white shadow-xl shadow-secondary/20 transition-all hover:scale-105 disabled:opacity-50 disabled:hover:scale-100"
             >
               <RefreshCw className={`w-4 h-4 ${isSyncing ? "animate-spin" : ""}`} />
               {isSyncing ? "Đang đồng bộ..." : "Đồng bộ lại AI"}
@@ -183,7 +186,7 @@ export default function AISuggestionsPage() {
           {/* Rank 1 - Featured Match */}
           {topMatch && (
             <div className="lg:col-span-8 group">
-              <div className="glass-card rounded-[2rem] p-8 border border-white/40 shadow-sm relative overflow-hidden transition-all duration-500 hover:shadow-2xl hover:shadow-primary/10">
+              <div className="glass-card rounded-[2rem] p-8 border border-white/40 shadow-sm relative overflow-hidden transition-shadow hover:shadow-2xl hover:shadow-primary/10">
                 <div className="absolute top-0 right-0 p-6">
                   <div className="flex flex-col items-end">
                     <div className="text-6xl font-black text-primary opacity-20 tracking-tighter">01</div>
@@ -195,10 +198,12 @@ export default function AISuggestionsPage() {
                 </div>
                 
                 <div className="flex flex-col md:flex-row gap-8 items-start relative z-10">
-                  <div className="relative shrink-0 mt-4">
+                  <div className="relative shrink-0 mt-4 h-32 w-32 md:h-48 md:w-48">
+                    {/* Candidate avatars can come from user-managed external URLs. */}
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img 
                       alt={topMatch.candidateName || "Ứng viên"} 
-                      className="w-32 h-32 md:w-48 md:h-48 rounded-[2rem] object-cover shadow-xl bg-surface-container-high" 
+                      className="h-full w-full rounded-[2rem] object-cover shadow-xl bg-surface-container-high" 
                       src={topMatch.candidateAvatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(topMatch.candidateName || "CV")}&background=0050d4&color=fff&size=200`} 
                     />
                     <div className="absolute -bottom-4 -right-4 w-16 h-16 rounded-full signature-gradient border-4 border-surface-container-lowest flex flex-col items-center justify-center text-white">
@@ -287,15 +292,17 @@ export default function AISuggestionsPage() {
 
             {/* Secondary Candidate */}
             {secondaryMatch && (
-              <div className="glass-card rounded-[2rem] p-6 border border-white/40 shadow-sm hover:translate-y-[-4px] transition-all relative overflow-hidden">
+              <div className="glass-card rounded-[2rem] p-6 border border-white/40 shadow-sm transition-shadow hover:shadow-lg relative overflow-hidden">
                 <div className="absolute top-0 right-0 p-4 opacity-10">
                   <span className="text-4xl font-black">02</span>
                 </div>
                 <div className="flex items-center gap-4 mb-6 relative z-10">
-                  <div className="relative shrink-0">
+                  <div className="relative h-16 w-16 shrink-0">
+                    {/* Candidate avatars can come from user-managed external URLs. */}
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img 
                       alt={secondaryMatch.candidateName || "Ứng viên"} 
-                      className="w-16 h-16 rounded-2xl object-cover bg-surface-container-high" 
+                      className="h-full w-full rounded-2xl object-cover bg-surface-container-high" 
                       src={secondaryMatch.candidateAvatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(secondaryMatch.candidateName || "CV")}&background=6a37d4&color=fff&size=100`} 
                     />
                     <div className="absolute -top-2 -right-2 bg-primary text-white text-[10px] font-black w-7 h-7 rounded-full flex items-center justify-center border-2 border-white shadow-sm">
@@ -336,16 +343,20 @@ export default function AISuggestionsPage() {
           {otherMatches.length > 0 && (
             <div className="lg:col-span-12 grid grid-cols-1 md:grid-cols-3 gap-8 mt-4">
               {otherMatches.map((match, idx) => (
-                <div key={match.cv.id} className="glass-card rounded-[2rem] p-6 border border-white/40 shadow-sm group hover:border-primary/20 transition-all relative overflow-hidden">
+                <div key={match.cv.id} className="glass-card rounded-[2rem] p-6 border border-white/40 shadow-sm group hover:border-primary/20 transition-colors relative overflow-hidden">
                   <div className="absolute top-0 right-0 p-4 opacity-5">
                     <span className="text-4xl font-black">0{idx + 3}</span>
                   </div>
                   <div className="flex justify-between items-start mb-6 relative z-10">
-                    <img 
-                      alt={match.candidateName || "Ứng viên"} 
-                      className="w-14 h-14 rounded-xl object-cover bg-surface-container-high" 
-                      src={match.candidateAvatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(match.candidateName || "CV")}&background=0057bd&color=fff&size=100`} 
-                    />
+                    <div className="h-14 w-14 shrink-0">
+                      {/* Candidate avatars can come from user-managed external URLs. */}
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img 
+                        alt={match.candidateName || "Ứng viên"} 
+                        className="h-full w-full rounded-xl object-cover bg-surface-container-high" 
+                        src={match.candidateAvatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(match.candidateName || "CV")}&background=0057bd&color=fff&size=100`} 
+                      />
+                    </div>
                     <div className="bg-primary/10 text-primary px-3 py-1 rounded-full text-xs font-black shadow-inner shadow-primary/5">
                       Phù hợp {match.matchScore || 0}%
                     </div>

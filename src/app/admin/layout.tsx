@@ -17,7 +17,7 @@ import {
   Users,
 } from "lucide-react";
 import { BRAND_NAME } from "@/lib/brand";
-import { clearAuthSession, getStoredAccountType, getStoredToken, isTokenExpired } from "@/lib/authSession";
+import { clearAuthSession, getStoredAccountType, getStoredToken, isTokenExpired, logoutAuthSession } from "@/lib/authSession";
 import UserMenu from "@/components/layout/UserMenu";
 
 const navItems = [
@@ -90,8 +90,8 @@ export default function AdminLayout({
     return null;
   }
 
-  const logout = () => {
-    clearAuthSession();
+  const logout = async () => {
+    await logoutAuthSession();
     router.replace("/admin/login");
   };
 

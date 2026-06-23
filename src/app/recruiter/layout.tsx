@@ -5,7 +5,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { Bell, Briefcase, Building2, HelpCircle, LayoutDashboard, MessageSquare, Plus, Search, Sparkles, Users } from "lucide-react";
 import { BRAND_NAME } from "@/lib/brand";
-import { clearAuthSession, getHomePathForAccount, getStoredAccountType, getStoredToken, isTokenExpired } from "@/lib/authSession";
+import { clearAuthSession, getHomePathForAccount, getStoredAccountType, getStoredToken, isTokenExpired, logoutAuthSession } from "@/lib/authSession";
 import UserMenu from "@/components/layout/UserMenu";
 
 const navItems = [
@@ -72,8 +72,8 @@ export default function RecruiterLayout({
     return null;
   }
 
-  const logout = () => {
-    clearAuthSession();
+  const logout = async () => {
+    await logoutAuthSession();
     router.replace("/login?role=recruiter");
   };
 

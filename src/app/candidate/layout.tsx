@@ -5,7 +5,7 @@ import { Bell, Bookmark, BriefcaseBusiness, FileText, UserRound, Video } from "l
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { BRAND_NAME } from "@/lib/brand";
-import { clearAuthSession, getHomePathForAccount, getStoredAccountType, getStoredToken, isTokenExpired } from "@/lib/authSession";
+import { clearAuthSession, getHomePathForAccount, getStoredAccountType, getStoredToken, isTokenExpired, logoutAuthSession } from "@/lib/authSession";
 import UserMenu from "@/components/layout/UserMenu";
 import { getCandidateProfile } from "@/lib/api/profile";
 import type { CandidateProfileResponse } from "@/lib/api/profile";
@@ -73,7 +73,7 @@ export default function CandidateLayout({
       window.removeEventListener("focus", validateSession);
       document.removeEventListener("visibilitychange", handleVisibilityChange);
     };
-  }, [router]);
+  }, [pathname, router]);
 
   useEffect(() => {
     if (!isAuthorized) {
@@ -151,8 +151,8 @@ export default function CandidateLayout({
               roleLabel="Ứng viên"
               items={accountMenuItems}
               avatarUrl={avatarUrl}
-              onLogout={() => {
-                clearAuthSession();
+              onLogout={async () => {
+                await logoutAuthSession();
                 router.replace("/login?role=candidate");
               }}
             />

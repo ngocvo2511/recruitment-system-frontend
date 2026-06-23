@@ -1,5 +1,7 @@
 export type AccountType = "candidate" | "recruiter" | "admin";
 
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:8080";
+
 type JwtPayload = {
   scope?: string;
   user_id?: string;
@@ -100,6 +102,31 @@ export function clearAuthSession() {
   window.localStorage.removeItem("token");
   window.localStorage.removeItem("accountType");
   window.localStorage.removeItem("userId");
+}
+
+export async function revokeStoredToken(): Promise<void> {
+  const token = getStoredToken();
+  if (!token) {
+    return;
+  }
+
+  await fetch(`${API_BASE_URL}/api/auth/logout`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ token }),
+  });
+}
+
+export async function logoutAuthSession(): Promise<void> {
+  try {
+    await revokeStoredToken();
+  } catch {
+    // Local logout must still complete if the backend is unavailable.
+  } finally {
+    clearAuthSession();
+  }
 }
 
 export function saveAuthSession(token: string, accountType: AccountType, userId?: string | null) {
