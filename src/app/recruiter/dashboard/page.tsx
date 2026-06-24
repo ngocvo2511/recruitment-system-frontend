@@ -89,10 +89,10 @@ export default function RecruiterDashboard() {
 
   return (
     <div className="w-full">
-      <header className="relative mb-12 flex flex-col md:flex-row md:items-end justify-between gap-6">
-        <div className="max-w-2xl">
+      <header className="relative mb-12 flex flex-row items-end justify-between gap-6 flex-wrap">
+        <div className="flex-1 min-w-0">
           <p className="text-primary font-bold uppercase tracking-widest text-sm mb-2">Tổng quan nhà tuyển dụng</p>
-          <h1 className="text-4xl md:text-5xl font-extrabold text-on-surface leading-tight tracking-tight">
+          <h1 className="text-2xl md:text-3xl font-extrabold text-on-surface leading-tight tracking-tight">
             Theo dõi pipeline tuyển dụng từ dữ liệu thật.
           </h1>
           {error && (
@@ -101,19 +101,19 @@ export default function RecruiterDashboard() {
             </p>
           )}
         </div>
-        <div className="flex flex-wrap gap-4">
-          <Link href="/recruiter/jobs/create" className="signature-gradient text-white px-8 py-4 rounded-full font-bold shadow-lg shadow-primary/20 hover:scale-105 active:scale-95 transition-all flex items-center gap-2">
-            <Plus className="w-5 h-5" /> Đăng tin mới
+        <div className="flex flex-nowrap items-center gap-3 flex-shrink-0">
+          <Link href="/recruiter/jobs/create" className="signature-gradient text-white px-5 py-3 rounded-full font-bold shadow-lg shadow-primary/20 hover:scale-105 active:scale-95 transition-all flex items-center gap-2 whitespace-nowrap">
+            <Plus className="w-4 h-4" /> Đăng tin mới
           </Link>
-          <Link href="/recruiter/pipeline" className="bg-surface-container-highest text-on-surface px-8 py-4 rounded-full font-bold hover:bg-surface-variant transition-all flex items-center gap-2">
-            <Eye className="w-5 h-5" /> Xem ứng viên
+          <Link href="/recruiter/pipeline" className="bg-surface-container-highest text-on-surface px-5 py-3 rounded-full font-bold hover:bg-surface-variant transition-all flex items-center gap-2 whitespace-nowrap">
+            <Eye className="w-4 h-4" /> Xem ứng viên
           </Link>
           <button
-            className="bg-white text-on-surface px-5 py-4 rounded-full font-bold border border-outline-variant/20 hover:bg-surface-container-low transition-all flex items-center gap-2"
+            className="bg-surface-container text-on-surface px-4 py-3 rounded-full font-bold border border-outline-variant/20 hover:bg-surface-container-low transition-all flex items-center gap-2 whitespace-nowrap"
             onClick={loadDashboard}
             type="button"
           >
-            <RefreshCw className="w-5 h-5" /> Làm mới
+            <RefreshCw className="w-4 h-4" /> Làm mới
           </button>
         </div>
         <div className="absolute -top-24 -right-24 w-64 h-64 bg-secondary/10 blur-[100px] rounded-full -z-10 pointer-events-none"></div>
@@ -232,11 +232,14 @@ export default function RecruiterDashboard() {
             </div>
           </div>
 
-          <div className="relative rounded-[2rem] overflow-hidden aspect-[4/3] group bg-slate-900 border border-slate-800">
-            <div className="absolute inset-0 bg-gradient-to-t from-inverse-surface via-inverse-surface/40 to-transparent p-8 flex flex-col justify-end">
-              <p className="text-primary-fixed font-bold text-xs uppercase tracking-widest mb-2">Báo cáo tuyển dụng</p>
-              <h3 className="text-white text-xl font-bold leading-tight mb-4">Theo dõi hiệu quả tuyển dụng theo dữ liệu ứng tuyển thực tế.</h3>
-              <Link href="/recruiter/pipeline" className="flex items-center justify-center gap-2 text-white font-bold text-sm bg-white/10 backdrop-blur-md px-6 py-3 rounded-full hover:bg-white/20 transition-all">
+          <div className="relative rounded-[2rem] overflow-hidden p-8 flex flex-col justify-between" style={{ background: "linear-gradient(135deg, hsl(var(--primary) / 0.12) 0%, hsl(var(--secondary) / 0.10) 100%)", border: "1px solid hsl(var(--primary) / 0.15)" }}>
+            <div>
+              <p className="text-primary font-bold text-xs uppercase tracking-widest mb-3">Báo cáo tuyển dụng</p>
+              <h3 className="text-on-surface text-lg font-bold leading-snug mb-2">Theo dõi hiệu quả tuyển dụng theo dữ liệu ứng tuyển thực tế.</h3>
+              <p className="text-on-surface-variant text-xs leading-relaxed">Phân tích tỉ lệ chuyển đổi, nguồn ứng viên và tiến độ từng tin đăng.</p>
+            </div>
+            <div className="mt-6">
+              <Link href="/recruiter/pipeline" className="flex items-center justify-center gap-2 text-primary font-bold text-sm bg-primary/10 hover:bg-primary/20 px-6 py-3 rounded-full transition-all border border-primary/20">
                 Mở quy trình <Download className="w-4 h-4" />
               </Link>
             </div>

@@ -368,3 +368,22 @@ export function reportJob(jobId: string, payload: {
     body: JSON.stringify(payload),
   });
 }
+
+export function updateJob(jobId: string, payload: JobPayload): Promise<JobResponse> {
+  return request<JobResponse>(`/api/jobs/${jobId}`, {
+    method: "PUT",
+    body: JSON.stringify(payload),
+  });
+}
+
+export function closeJob(jobId: string): Promise<JobResponse> {
+  return request<JobResponse>(`/api/jobs/${jobId}/close`, {
+    method: "PATCH",
+  });
+}
+
+export function deleteJob(jobId: string): Promise<void> {
+  return request<void>(`/api/jobs/${jobId}`, {
+    method: "DELETE",
+  });
+}

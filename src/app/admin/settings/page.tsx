@@ -241,16 +241,16 @@ export default function AdminSettingsPage() {
         </section>
       </div>
 
-      <div className="rounded-2xl bg-slate-900 p-6 text-white">
+      <div className="glass-card rounded-2xl border border-outline-variant/10 p-6">
         <div className="flex items-center gap-3">
-          <ShieldCheck className="h-5 w-5 text-emerald-300" />
-          <h2 className="text-lg font-bold">Audit</h2>
+          <ShieldCheck className="h-5 w-5 text-emerald-600" />
+          <h2 className="text-lg font-bold text-on-surface">Audit</h2>
         </div>
-        <p className="mt-2 text-sm text-slate-300">
+        <p className="mt-2 text-sm text-on-surface-variant">
           Mỗi lần lưu cấu hình sẽ ghi một bản ghi `SETTINGS_UPDATED` trong nhật ký admin.
         </p>
-        <div className="mt-4 flex items-center gap-2 text-sm text-slate-300">
-          <Bell className="h-4 w-4" />
+        <div className="mt-4 flex items-center gap-2 text-sm text-on-surface-variant">
+          <Bell className="h-4 w-4 text-outline" />
           Các toggle notification được áp dụng cho các luồng tạo công ty, tạo tin và moderation.
         </div>
       </div>

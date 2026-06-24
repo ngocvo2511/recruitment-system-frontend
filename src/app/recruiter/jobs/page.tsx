@@ -1,9 +1,9 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { Ban, CalendarDays, Edit2, Eye, Filter, Loader2, Plus, Trash2 } from "lucide-react";
-import { getJobs, type JobSummaryResponse, type JobStatus, type Page } from "@/lib/api/jobs";
+import { Ban, CalendarDays, Edit2, Eye, Filter, Loader2, Plus, Trash2, Users } from "lucide-react";
+import { getJobs, closeJob, deleteJob, type JobSummaryResponse, type JobStatus, type Page } from "@/lib/api/jobs";
 
 const statusLabel: Record<JobStatus, string> = {
   DRAFT: "Bản nháp",
@@ -39,12 +39,33 @@ function formatDate(value?: string | null) {
   return new Intl.DateTimeFormat("vi-VN").format(new Date(value));
 }
 
+const dateRangeLabels = {
+  all: "Tất cả thời gian",
+  today: "Hôm nay",
+  "7days": "7 ngày qua",
+  "30days": "30 ngày qua",
+  thisMonth: "Tháng này",
+};
+
 export default function RecruiterJobManagementPage() {
   const [jobs, setJobs] = useState<JobSummaryResponse[]>([]);
   const [pageData, setPageData] = useState<Page<JobSummaryResponse> | null>(null);
   const [page, setPage] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
+  const [toasts, setToasts] = useState<Array<{ id: number; message: string; type: "success" | "error" }>>([]);
+  const [statusFilter, setStatusFilter] = useState<"ALL" | "PUBLISHED" | "PENDING" | "CLOSED">("ALL");
+  const [dateRange, setDateRange] = useState<"all" | "today" | "7days" | "30days" | "thisMonth">("all");
+  const [isDateMenuOpen, setIsDateMenuOpen] = useState(false);
+
+  const addToast = useCallback((type: "success" | "error", message: string) => {
+    const id = Date.now() + Math.floor(Math.random() * 1000);
+    setToasts((prev) => [...prev, { id, type, message }]);
+    window.setTimeout(() => {
+      setToasts((prev) => prev.filter((item) => item.id !== id));
+    }, 4000);
+  }, []);
 
   useEffect(() => {
     let mounted = true;
@@ -67,7 +88,35 @@ export default function RecruiterJobManagementPage() {
     return () => {
       mounted = false;
     };
-  }, [page]);
+  }, [page, refreshTrigger]);
+
+  const handleCloseJob = async (jobId: string, jobTitle: string) => {
+    if (!confirm(`Bạn có chắc chắn muốn đóng tin tuyển dụng "${jobTitle}" không?`)) {
+      return;
+    }
+    try {
+      await closeJob(jobId);
+      addToast("success", `Đã đóng tin tuyển dụng "${jobTitle}" thành công.`);
+      setRefreshTrigger((prev) => prev + 1);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Không thể đóng tin tuyển dụng.";
+      addToast("error", message);
+    }
+  };
+
+  const handleDeleteJob = async (jobId: string, jobTitle: string) => {
+    if (!confirm(`Bạn có chắc chắn muốn xóa vĩnh viễn tin tuyển dụng "${jobTitle}" không?\nHành động này không thể hoàn tác.`)) {
+      return;
+    }
+    try {
+      await deleteJob(jobId);
+      addToast("success", `Đã xóa tin tuyển dụng "${jobTitle}" thành công.`);
+      setRefreshTrigger((prev) => prev + 1);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Không thể xóa tin tuyển dụng.";
+      addToast("error", message);
+    }
+  };
 
   const stats = useMemo(() => {
     // Note: To get real stats across all pages, the backend should provide an endpoint.
@@ -77,6 +126,41 @@ export default function RecruiterJobManagementPage() {
     const closed = jobs.filter((job) => job.status === "CLOSED").length;
     return { published, pending, closed, total: pageData?.totalElements || 0 };
   }, [jobs, pageData]);
+
+  const filteredJobs = useMemo(() => {
+    return jobs.filter((job) => {
+      // 1. Status Filter
+      if (statusFilter !== "ALL" && job.status !== statusFilter) {
+        return false;
+      }
+
+      // 2. Date Range Filter
+      if (dateRange !== "all") {
+        const createdAt = job.createdAt ? new Date(job.createdAt) : null;
+        if (!createdAt || Number.isNaN(createdAt.getTime())) return false;
+
+        const now = new Date();
+        const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+
+        if (dateRange === "today") {
+          if (createdAt < startOfToday) return false;
+        } else if (dateRange === "7days") {
+          const sevenDaysAgo = new Date(startOfToday);
+          sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+          if (createdAt < sevenDaysAgo) return false;
+        } else if (dateRange === "30days") {
+          const thirtyDaysAgo = new Date(startOfToday);
+          thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+          if (createdAt < thirtyDaysAgo) return false;
+        } else if (dateRange === "thisMonth") {
+          const startOfThisMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+          if (createdAt < startOfThisMonth) return false;
+        }
+      }
+
+      return true;
+    });
+  }, [jobs, statusFilter, dateRange]);
 
   return (
     <div className="max-w-7xl mx-auto animate-fade-in-up">
@@ -104,22 +188,56 @@ export default function RecruiterJobManagementPage() {
         <StatCard label="Đã đóng" value={stats.closed} />
       </div>
 
-      <div className="flex flex-wrap gap-4 mb-8 items-center bg-surface-container-low/50 p-4 rounded-2xl backdrop-blur-sm border border-outline-variant/10">
+      <div className="relative z-30 flex flex-wrap gap-4 mb-8 items-center bg-surface-container-low/50 p-4 rounded-2xl backdrop-blur-sm border border-outline-variant/10">
         <div className="flex items-center gap-2">
           <Filter className="text-outline w-5 h-5" />
           <span className="text-sm font-bold uppercase tracking-wider text-on-surface-variant">Bộ lọc</span>
         </div>
         <div className="hidden md:block h-6 w-px bg-outline-variant/30 mx-2"></div>
-        <select className="bg-surface-container-lowest border-none rounded-xl text-sm font-medium px-4 py-2 focus:ring-primary/20 shadow-sm cursor-pointer outline-none">
-          <option>Tất cả trạng thái</option>
-          <option>Đang đăng</option>
-          <option>Chờ duyệt</option>
-          <option>Đã đóng</option>
+        <select
+          value={statusFilter}
+          onChange={(e) => setStatusFilter(e.target.value as "ALL" | "PUBLISHED" | "PENDING" | "CLOSED")}
+          className="bg-surface-container-lowest border-none rounded-xl text-sm font-medium px-4 py-2 focus:ring-primary/20 shadow-sm cursor-pointer outline-none"
+        >
+          <option value="ALL">Tất cả trạng thái</option>
+          <option value="PUBLISHED">Đang đăng</option>
+          <option value="PENDING">Chờ duyệt</option>
+          <option value="CLOSED">Đã đóng</option>
         </select>
-        <button className="md:ml-auto flex items-center gap-2 px-4 py-2 bg-surface-container-lowest text-on-surface rounded-xl text-sm font-semibold shadow-sm hover:bg-surface-container transition-colors border border-outline-variant/10">
-          <CalendarDays className="w-4 h-4" />
-          Khoảng thời gian
-        </button>
+
+        <div className="relative md:ml-auto">
+          <button
+            onClick={() => setIsDateMenuOpen((prev) => !prev)}
+            className="flex items-center gap-2 px-4 py-2 bg-surface-container-lowest text-on-surface rounded-xl text-sm font-semibold shadow-sm hover:bg-surface-container transition-colors border border-outline-variant/10"
+            type="button"
+          >
+            <CalendarDays className="w-4 h-4 text-outline" />
+            {dateRangeLabels[dateRange]}
+          </button>
+          
+          {isDateMenuOpen && (
+            <>
+              {/* Overlay background to close the dropdown when clicking outside */}
+              <div className="fixed inset-0 z-10" onClick={() => setIsDateMenuOpen(false)}></div>
+              
+              <div className="absolute right-0 mt-2 w-48 rounded-xl bg-surface-container-lowest border border-outline-variant/10 shadow-lg py-2 z-30 animate-fade-in-up">
+                {Object.entries(dateRangeLabels).map(([key, label]) => (
+                  <button
+                    key={key}
+                    onClick={() => {
+                      setDateRange(key as "all" | "today" | "7days" | "30days" | "thisMonth");
+                      setIsDateMenuOpen(false);
+                    }}
+                    className={`w-full text-left px-4 py-2.5 text-sm font-semibold hover:bg-surface-container transition-colors ${dateRange === key ? "text-primary" : "text-on-surface-variant"}`}
+                    type="button"
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
+            </>
+          )}
+        </div>
       </div>
 
       <div className="glass-card rounded-2xl shadow-[0_20px_50px_rgba(0,0,0,0.03)] overflow-hidden border border-white/40">
@@ -131,6 +249,10 @@ export default function RecruiterJobManagementPage() {
         ) : jobs.length === 0 ? (
           <div className="p-10 text-center text-on-surface-variant">
             Chưa có tin tuyển dụng. Hãy tạo tin đầu tiên để bắt đầu nhận ứng viên.
+          </div>
+        ) : filteredJobs.length === 0 ? (
+          <div className="p-10 text-center text-on-surface-variant">
+            Không tìm thấy tin tuyển dụng nào khớp với bộ lọc đang chọn.
           </div>
         ) : (
           <div className="overflow-x-auto">
@@ -145,7 +267,7 @@ export default function RecruiterJobManagementPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-outline-variant/10">
-                {jobs.map((job) => (
+                {filteredJobs.map((job) => (
                   <tr key={job.id} className="group hover:bg-primary/5 transition-colors">
                     <td className="px-8 py-6">
                       <div className="flex flex-col gap-1">
@@ -172,16 +294,25 @@ export default function RecruiterJobManagementPage() {
                     </td>
                     <td className="px-8 py-6 text-right">
                       <div className="flex justify-end items-center gap-2 opacity-60 group-hover:opacity-100 transition-opacity">
-                        <Link href="/recruiter/pipeline" className="p-2 text-outline hover:text-primary transition-colors" title="Xem pipeline">
+                        <Link href={`/recruiter/jobs/${job.id}`} className="p-2 text-outline hover:text-primary transition-colors" title="Xem chi tiết tin tuyển dụng">
                           <Eye className="w-5 h-5" />
                         </Link>
-                        <button className="p-2 text-outline hover:text-primary transition-colors" title="Chỉnh sửa">
+                        <Link href={`/recruiter/pipeline?jobId=${job.id}`} className="p-2 text-outline hover:text-primary transition-colors" title="Quy trình tuyển dụng (Pipeline)">
+                          <Users className="w-5 h-5" />
+                        </Link>
+                        <Link href={`/recruiter/jobs/edit/${job.id}`} className="p-2 text-outline hover:text-primary transition-colors" title="Chỉnh sửa">
                           <Edit2 className="w-5 h-5" />
-                        </button>
-                        <button className="p-2 text-outline hover:text-error transition-colors" title="Đóng tin">
-                          <Ban className="w-5 h-5" />
-                        </button>
-                        <button className="p-2 text-outline hover:text-error transition-colors" title="Xóa">
+                        </Link>
+                        {job.status !== "CLOSED" ? (
+                          <button onClick={() => handleCloseJob(job.id, job.title)} className="p-2 text-outline hover:text-error transition-colors" title="Đóng tin">
+                            <Ban className="w-5 h-5" />
+                          </button>
+                        ) : (
+                          <span className="p-2 text-outline/30 cursor-not-allowed" title="Tin đã đóng">
+                            <Ban className="w-5 h-5" />
+                          </span>
+                        )}
+                        <button onClick={() => handleDeleteJob(job.id, job.title)} className="p-2 text-outline hover:text-error transition-colors" title="Xóa">
                           <Trash2 className="w-5 h-5" />
                         </button>
                       </div>
@@ -216,6 +347,22 @@ export default function RecruiterJobManagementPage() {
             )}
           </div>
         )}
+      </div>
+
+      {/* Toast Notifications */}
+      <div className="fixed top-5 right-5 z-50 flex flex-col gap-2">
+        {toasts.map((toast) => (
+          <div
+            key={toast.id}
+            className={`min-w-[240px] max-w-[360px] rounded-xl px-4 py-3 text-sm font-semibold shadow-lg border glass-card ${
+              toast.type === "success"
+                ? "border-secondary/20 text-on-surface"
+                : "border-red-200 text-red-600"
+            }`}
+          >
+            {toast.message}
+          </div>
+        ))}
       </div>
     </div>
   );

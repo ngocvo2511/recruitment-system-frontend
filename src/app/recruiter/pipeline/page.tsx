@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { Suspense, useEffect, useMemo, useState } from "react";
 import { AlertCircle, BriefcaseBusiness, Clock, FileText, Mail, MoreHorizontal, Phone } from "lucide-react";
 import {
   ApiError,
@@ -9,6 +9,8 @@ import {
   type ApplicationResponse,
   type ApplicationStatus,
 } from "@/lib/api/applications";
+import { useRouter, useSearchParams } from "next/navigation";
+import { getJobById } from "@/lib/api/jobs";
 
 const STAGES: Array<{ status: ApplicationStatus; title: string; borderClass: string }> = [
   { status: "APPLIED", title: "Mới nộp", borderClass: "border-l-primary/40" },
@@ -42,12 +44,16 @@ function getCandidateInitial(application: ApplicationResponse): string {
   return (application.candidateName ?? application.candidateEmail ?? "?").slice(0, 1).toUpperCase();
 }
 
-export default function PipelineKanban() {
+function PipelineKanbanContent() {
+  const searchParams = useSearchParams();
+  const router = useRouter();
+  const selectedJobId = searchParams ? (searchParams.get("jobId") || "all") : "all";
+
   const [applications, setApplications] = useState<ApplicationResponse[]>([]);
   const [loading, setLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [updatingId, setUpdatingId] = useState<string | null>(null);
-  const [selectedJobId, setSelectedJobId] = useState<string>("all");
+  const [extraJob, setExtraJob] = useState<{ id: string; title: string; count: number } | null>(null);
 
   useEffect(() => {
     let active = true;
@@ -70,6 +76,44 @@ export default function PipelineKanban() {
     };
   }, []);
 
+  // Fetch job title dynamically if selectedJobId has no applications in the list
+  useEffect(() => {
+    if (selectedJobId === "all") {
+      return;
+    }
+
+    const hasApp = applications.some((app) => app.jobId === selectedJobId);
+    if (hasApp) {
+      return;
+    }
+
+    let active = true;
+    const loadJobDetails = async () => {
+      try {
+        const job = await getJobById(selectedJobId);
+        if (active) {
+          setExtraJob({
+            id: job.id,
+            title: job.title,
+            count: 0,
+          });
+        }
+      } catch {
+        if (active) {
+          setExtraJob({
+            id: selectedJobId,
+            title: "Tin tuyển dụng",
+            count: 0,
+          });
+        }
+      }
+    };
+    void loadJobDetails();
+    return () => {
+      active = false;
+    };
+  }, [selectedJobId, applications]);
+
   const activeApplications = useMemo(
     () => applications.filter((application) => application.status !== "WITHDRAWN"),
     [applications],
@@ -89,12 +133,35 @@ export default function PipelineKanban() {
     return Array.from(jobs.values()).sort((first, second) => first.title.localeCompare(second.title, "vi"));
   }, [activeApplications]);
 
+  const allJobOptions = useMemo(() => {
+    const list = [...jobOptions];
+    if (
+      selectedJobId !== "all" &&
+      extraJob &&
+      extraJob.id === selectedJobId &&
+      !list.some((job) => job.id === extraJob.id)
+    ) {
+      list.push(extraJob);
+    }
+    return list;
+  }, [jobOptions, extraJob, selectedJobId]);
+
   const visibleApplications = useMemo(
     () => selectedJobId === "all"
       ? activeApplications
       : activeApplications.filter((application) => application.jobId === selectedJobId),
     [activeApplications, selectedJobId],
   );
+
+  const handleJobSelect = (jobId: string) => {
+    const params = new URLSearchParams(window.location.search);
+    if (jobId === "all") {
+      params.delete("jobId");
+    } else {
+      params.set("jobId", jobId);
+    }
+    router.push(`/recruiter/pipeline?${params.toString()}`);
+  };
 
   const handleStatusChange = async (applicationId: string, status: ApplicationStatus) => {
     setUpdatingId(applicationId);
@@ -144,7 +211,7 @@ export default function PipelineKanban() {
 
       {loading ? (
         <div className="rounded-xl bg-surface-container-lowest p-8 text-on-surface-variant">Đang tải pipeline...</div>
-      ) : activeApplications.length === 0 ? (
+      ) : activeApplications.length === 0 && !extraJob ? (
         <div className="rounded-xl bg-surface-container-lowest p-10 text-center border border-outline-variant/10">
           <BriefcaseBusiness className="mx-auto mb-4 h-10 w-10 text-primary" />
           <h2 className="text-xl font-bold text-on-surface mb-2">Chưa có ứng viên nộp hồ sơ</h2>
@@ -160,16 +227,16 @@ export default function PipelineKanban() {
             <div className="flex gap-2 overflow-x-auto pb-1">
               <button
                 className={`shrink-0 rounded-full px-4 py-2 text-sm font-bold transition-all ${selectedJobId === "all" ? "bg-primary text-white shadow-sm" : "bg-surface-container-high text-on-surface-variant hover:text-on-surface"}`}
-                onClick={() => setSelectedJobId("all")}
+                onClick={() => handleJobSelect("all")}
                 type="button"
               >
                 Tất cả ({activeApplications.length})
               </button>
-              {jobOptions.map((job) => (
+              {allJobOptions.map((job) => (
                 <button
                   key={job.id}
                   className={`shrink-0 rounded-full px-4 py-2 text-sm font-bold transition-all ${selectedJobId === job.id ? "bg-primary text-white shadow-sm" : "bg-surface-container-high text-on-surface-variant hover:text-on-surface"}`}
-                  onClick={() => setSelectedJobId(job.id)}
+                  onClick={() => handleJobSelect(job.id)}
                   type="button"
                 >
                   {job.title} ({job.count})
@@ -280,5 +347,18 @@ export default function PipelineKanban() {
         </>
       )}
     </div>
+  );
+}
+
+export default function PipelineKanban() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-[50vh] flex flex-col items-center justify-center text-on-surface-variant">
+        <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-primary"></div>
+        <p className="mt-2 text-sm">Đang tải...</p>
+      </div>
+    }>
+      <PipelineKanbanContent />
+    </Suspense>
   );
 }

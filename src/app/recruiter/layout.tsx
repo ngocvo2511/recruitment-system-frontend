@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { Bell, Briefcase, Building2, HelpCircle, LayoutDashboard, MessageSquare, Plus, Search, Sparkles, Users } from "lucide-react";
+import { Bell, Briefcase, Building2, HelpCircle, LayoutDashboard, MessageSquare, Plus, Search, Sparkles, UserCircle, Users } from "lucide-react";
 import { BRAND_NAME } from "@/lib/brand";
 import { clearAuthSession, getHomePathForAccount, getStoredAccountType, getStoredToken, isTokenExpired, logoutAuthSession } from "@/lib/authSession";
 import UserMenu from "@/components/layout/UserMenu";
@@ -15,9 +15,11 @@ const navItems = [
   { href: "/recruiter/pipeline", label: "Quy trình", icon: LayoutDashboard },
   { href: "/recruiter/candidates", label: "Ứng viên", icon: Users },
   { href: "/recruiter/ai-suggest", label: "Gợi ý AI", icon: Sparkles },
+  { href: "/recruiter/profile", label: "Hồ sơ cá nhân", icon: UserCircle },
 ];
 
 const accountMenuItems = [
+  { href: "/recruiter/profile", label: "Hồ sơ cá nhân", icon: UserCircle },
   { href: "/recruiter/company", label: "Hồ sơ công ty", icon: Building2 },
 ];
 

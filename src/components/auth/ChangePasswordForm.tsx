@@ -36,8 +36,12 @@ export function ChangePasswordForm() {
       setOldPassword("");
       setNewPassword("");
       setConfirmPassword("");
-    } catch (e: any) {
-      setError(e.message || "Đã xảy ra lỗi khi đổi mật khẩu. Vui lòng kiểm tra lại mật khẩu cũ.");
+    } catch (e) {
+      const message =
+        e instanceof Error
+          ? e.message
+          : "Đã xảy ra lỗi khi đổi mật khẩu. Vui lòng kiểm tra lại mật khẩu cũ.";
+      setError(message);
     } finally {
       setLoading(false);
     }
